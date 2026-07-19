@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="icon" href="{{asset('images/Barons Logo.png')}}" type="image/png">
+<link rel="stylesheet" href="https://unpkg.com/aos@2.3.4/dist/aos.css"/>
 
 <style>
 *{
@@ -28,7 +29,7 @@ body{
     margin:auto;
 }
 
-/* NAVBAR */
+/* ================= NAVBAR ================= */
 
 nav{
     background:#111;
@@ -36,6 +37,7 @@ nav{
     position:sticky;
     top:0;
     z-index:1000;
+    box-shadow:0 4px 15px rgba(0,0,0,.15);
 }
 
 .nav-container{
@@ -48,21 +50,76 @@ nav{
 }
 
 .logo{
+    display:flex;
+    align-items:center;
+    gap:12px;
     color:#fff;
+    text-decoration:none;
     font-size:22px;
     font-weight:600;
 }
 
+.logo img{
+    width:45px;
+    height:45px;
+    object-fit:cover;
+    border-radius:50%;
+}
+
 .nav-links{
     display:flex;
-    gap:30px;
+    align-items:center;
+    gap:35px;
 }
 
 .nav-links a{
     color:#fff;
     text-decoration:none;
+    font-weight:500;
+    transition:.3s;
+    position:relative;
 }
 
+.nav-links a:hover{
+    color:#d4af37;
+}
+
+.nav-links a::after{
+    content:"";
+    position:absolute;
+    left:0;
+    bottom:-8px;
+    width:0%;
+    height:2px;
+    background:#d4af37;
+    transition:.3s;
+}
+
+.nav-links a:hover::after{
+    width:100%;
+}
+
+/* Active Page */
+
+.nav-links a.active{
+    color:#d4af37;
+}
+
+.nav-links a.active::after{
+    width:100%;
+}
+
+@media(max-width:900px){
+
+.nav-links{
+display:none;
+}
+
+.logo{
+font-size:18px;
+}
+
+}
 /* HERO */
 
 .hero{
@@ -490,7 +547,260 @@ section{
 
 .gallery-grid img:first-child{
     grid-row:span 2;
-}@media(max-width:900px){
+}
+
+/* Overlay */
+
+.announcement-modal{
+
+    position:fixed;
+    inset:0;
+
+    background:rgba(0,0,0,.82);
+
+    backdrop-filter:blur(8px);
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    z-index:99999;
+
+}
+
+/* Card */
+
+.announcement-card{
+
+    width:90%;
+    max-width:820px;
+
+    background:#111;
+
+    color:white;
+
+    border-radius:25px;
+
+    overflow:hidden;
+
+    box-shadow:0 30px 80px rgba(0,0,0,.45);
+
+    animation:popup .45s ease;
+
+    position:relative;
+
+}
+
+/* Header */
+
+.announcement-header{
+
+    background:linear-gradient(90deg,#111,#1c1c1c);
+
+    padding:20px 30px;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:18px;
+
+
+}
+
+.announcement-header img{
+
+    width:55px;
+    height:55px;
+
+    border-radius:50%;
+}
+
+.announcement-header span{
+
+    color:#d4af37;
+
+    font-weight:600;
+
+    letter-spacing:2px;
+
+}
+
+/* Body */
+
+.announcement-body{
+
+    display:grid;
+
+    grid-template-columns:330px 1fr;
+
+}
+
+/* Image */
+
+.announcement-image img{
+
+    width:100%;
+    height:100%;
+
+    object-fit:cover;
+
+}
+
+/* Content */
+
+.announcement-content{
+
+    padding:45px;
+
+}
+
+.announcement-content small{
+
+    color:#d4af37;
+
+    letter-spacing:2px;
+
+    font-weight:600;
+
+}
+
+.announcement-content h2{
+
+    margin:15px 0;
+
+    font-size:36px;
+
+}
+
+.announcement-content p{
+
+    color:#ccc;
+
+    line-height:1.9;
+
+    margin-bottom:35px;
+
+}
+
+/* Button */
+
+.announcement-btn{
+
+    display:inline-block;
+
+    padding:14px 35px;
+
+    background:#d4af37;
+
+    color:#111;
+
+    border-radius:50px;
+
+    text-decoration:none;
+
+    font-weight:700;
+
+    transition:.3s;
+
+}
+
+.announcement-btn:hover{
+
+    background:white;
+
+    transform:translateY(-2px);
+
+}
+
+/* Close */
+
+.close-announcement{
+
+    position:absolute;
+
+    right:18px;
+
+    top:18px;
+
+    width:40px;
+
+    height:40px;
+
+    border:none;
+
+    border-radius:50%;
+
+    background:#d4af37;
+
+    color:#111;
+
+    font-size:24px;
+
+    cursor:pointer;
+
+    transition:.3s;
+
+}
+
+.close-announcement:hover{
+
+    transform:rotate(90deg);
+
+}
+
+/* Responsive */
+
+@media(max-width:800px){
+
+.announcement-body{
+
+grid-template-columns:1fr;
+
+}
+
+.announcement-image img{
+
+height:280px;
+
+}
+
+.announcement-content{
+
+padding:30px;
+
+}
+
+.announcement-content h2{
+
+font-size:28px;
+
+}
+
+}
+
+/* Animation */
+
+@keyframes popup{
+
+from{
+
+opacity:0;
+transform:translateY(40px) scale(.9);
+
+}
+
+to{
+
+opacity:1;
+transform:translateY(0) scale(1);
+
+}
+
+}
+@media(max-width:900px){
     .gallery-grid{
         grid-template-columns:1fr;
     }
@@ -542,6 +852,59 @@ section{
 
 <body>
 
+<div id="announcementModal" class="announcement-modal">
+
+    <div class="announcement-card">
+
+        <button class="close-announcement">
+            &times;
+        </button>
+
+        <div class="announcement-header">
+
+            <img src="{{ asset('images/Barons Logo.png') }}" alt="">
+
+            <span>OFFICIAL ANNOUNCEMENT</span>
+
+        </div>
+
+        <div class="announcement-body">
+
+            <div class="announcement-image">
+                <img src="{{ asset('images/cap.jpg') }}">
+            </div>
+
+            <div class="announcement-content">
+
+                <small>NEW OFFICIAL MERCHANDISE</small>
+
+                <h2>
+                    Official Barons Society Cap
+                </h2>
+
+                <p>
+                    Wear the newest official Barons Society Cap during
+                    meetings, outreach activities, reunions and official
+                    events.
+
+                    Represent our brotherhood with pride, discipline,
+                    and unity wherever you go.
+
+                    Limited stocks available.
+                </p>
+
+                <a href="#" class="announcement-btn">
+                    Avail Now
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
 <nav>
     <div class="nav-container">
         <div class="logo">
@@ -550,8 +913,8 @@ section{
         </div>
 
         <div class="nav-links">
-            <a href="#home-section">Home</a>
-            <a href="#">Blogs</a>
+            <a href="{{ url('/') }}" class="active">Home</a>
+            <a href="{{ url('/blogs') }}">News and Updates</a>
             <a href="#">Events</a>
             <a href="#">Bylaws</a>
         </div>
@@ -560,7 +923,7 @@ section{
 
 <section id="home-section" class="hero">
     <div class="container">
-        <div class="hero-content">
+        <div class="hero-content" data-aos="fade-right">
 
 
             <h1>
@@ -594,11 +957,11 @@ section{
 
         <div class="president-grid">
 
-            <div class="president-image">
+            <div class="president-image" data-aos="fade-right">
                 <img src="{{ asset('images/president.jpg') }}" alt="President">
             </div>
 
-            <div class="president-content">
+            <div class="president-content" data-aos="fade-left">
 
                 <span class="president-label">
                     PRESIDENT'S MESSAGE
@@ -641,22 +1004,22 @@ section{
     <div class="container">
         <div class="stats-grid">
 
-            <div class="stat-card">
+            <div class="stat-card" data-aos="fade-up">
                 <h2>35+</h2>
                 <p>Years of Service</p>
             </div>
 
-            <div class="stat-card">
+            <div class="stat-card" data-aos="fade-up" data-aos-delay="100">
                 <h2>500+</h2>
                 <p>Members</p>
             </div>
 
-            <div class="stat-card">
+            <div class="stat-card" data-aos="fade-up" data-aos-delay="200">
                 <h2>100+</h2>
                 <p>Community Activities</p>
             </div>
 
-            <div class="stat-card">
+            <div class="stat-card" data-aos="fade-up" data-aos-delay="300">
                 <h2>25+</h2>
                 <p>Major Accomplishments</p>
             </div>
@@ -673,7 +1036,7 @@ section{
 
         <div class="updates-grid">
 
-            <div class="card">
+            <div class="card" data-aos="fade-up">
             <img src="{{ asset('images/anniversary.jpg') }}">
             <div class="card-content">
                 <h3>Annual Fellowship & 36th Anniversary Celebration</h3>
@@ -689,7 +1052,7 @@ section{
             </div>
         </div>
 
-        <div class="card">
+        <div class="card" data-aos="fade-up" data-aos-delay="100">
             <img src="{{ asset('images/com-outreach.jpg') }}">
             <div class="card-content">
                 <h3>Paskong Pinoy Community Outreach Program</h3>
@@ -705,7 +1068,7 @@ section{
             </div>
         </div>
 
-        <div class="card">
+        <div class="card" data-aos="fade-up" data-aos-delay="200">
             <img src="{{ asset('images/recognition.jpg') }}">
             <div class="card-content">
                 <h3>128th Philippine Independence Day Celebration</h3>
@@ -732,7 +1095,7 @@ section{
             The Barons Legacy
         </h2>
 
-        <div class="legacy">
+        <div class="legacy" data-aos="fade-up">
             <img src="{{asset('images/legacy.jpg')}}">
 
             <div>
@@ -758,11 +1121,11 @@ section{
         </h2>
 
         <div class="gallery-grid">
-            <img src="{{ asset('images/annual.jpg') }}">
-            <img src="{{ asset('images/2.jpg') }}">
-            <img src="{{ asset('images/3.jpg') }}">
-            <img src="{{ asset('images/4.jpg') }}">
-            <img src="{{ asset('images/5.jpg') }}">
+            <img src="{{ asset('images/annual.jpg') }}" data-aos="fade-up">
+            <img src="{{ asset('images/2.jpg') }}" data-aos="fade-up" data-aos-delay="100">
+            <img src="{{ asset('images/3.jpg') }}" data-aos="fade-up" data-aos-delay="200">
+            <img src="{{ asset('images/4.jpg') }}" data-aos="fade-up" data-aos-delay="300">
+            <img src="{{ asset('images/5.jpg') }}" data-aos="fade-up" data-aos-delay="400">
         </div>
 
     </div>
@@ -826,5 +1189,46 @@ section{
     </div>
 
 </footer>
+
+<script>
+
+const modal = document.getElementById("announcementModal");
+const closeBtn = document.querySelector(".close-announcement");
+
+// Show only once per browser session
+if(sessionStorage.getItem("baronsAnnouncement") === "shown"){
+    modal.style.display = "none";
+}else{
+    sessionStorage.setItem("baronsAnnouncement","shown");
+}
+
+closeBtn.addEventListener("click",function(){
+
+    modal.style.display = "none";
+
+});
+
+window.addEventListener("click",function(e){
+
+    if(e.target === modal){
+
+        modal.style.display = "none";
+
+    }
+
+});
+</script>
+
+<script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+
+<script>
+AOS.init({
+    duration: 1000,
+    easing: 'ease-in-out',
+    once: true,
+    offset: 120
+});
+</script>
+
 </body>
 </html>
