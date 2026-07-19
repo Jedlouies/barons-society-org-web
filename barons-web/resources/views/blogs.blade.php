@@ -3,10 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Barons Society | Blogs</title>
+<title>Barons Society | Updates</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" href="{{asset('images/Barons Logo.png')}}" type="image/png">
+
 
 <style>
 
@@ -366,7 +368,7 @@ display:none;
 <div class="nav-links">
 <a href="{{ url('/') }}">Home</a>
 <a href="{{ url('/blogs') }}" class="active">News and Updates</a>
-<a href="#">Events</a>
+<a href="{{ url('/classes') }}">Classes</a>
 <a href="#">Bylaws</a>
 </div>
 
@@ -394,84 +396,92 @@ the Barons Society ROTC Alumni Incorporated.
 
 <div class="container">
 
-<div class="blog-grid">
+    @if(isset($announcements) && count($announcements) > 0)
 
-<div class="blog-card">
+        <div class="blog-grid">
 
-<img src="{{ asset('images/anniversary.jpg') }}">
+            @foreach($announcements as $announcement)
 
-<div class="blog-content">
+                <div class="blog-card">
 
-<div class="blog-date">
-December 29, 2025
-</div>
+                    <img src="{{ $announcement['image'] ?: asset('images/default-news.jpg') }}">
 
-<h2>Annual Fellowship & 36th Anniversary</h2>
+                    <div class="blog-content">
 
-<p>
-Members gathered at the 4ID Officer's Clubhouse to celebrate
-36 years of unity, leadership, and brotherhood.
-</p>
+                        <div class="blog-date">
+                            {{ \Carbon\Carbon::parse($announcement['created_at'])->format('F d, Y') }}
+                        </div>
 
-<a href="#" class="read-btn">
-Read More
-</a>
+                        <h2>{{ $announcement['title'] }}</h2>
 
-</div>
+                        <p>
+                            {{ Str::limit($announcement['description'],120) }}
+                        </p>
 
-</div>
+                        @if($announcement['button_link'])
 
-<div class="blog-card">
+                            <a
+                                href="{{ $announcement['button_link'] }}"
+                                class="read-btn">
 
-<img src="{{ asset('images/com-outreach.jpg') }}">
+                                {{ $announcement['button_text'] ?: 'Learn More' }}
 
-<div class="blog-content">
+                            </a>
 
-<div class="blog-date">
-December 18, 2025
-</div>
+                        @endif
 
-<h2>Paskong Pinoy Outreach Program</h2>
+                    </div>
 
-<p>
-Sharing hope through community service, toy donations,
-and activities for children in Brgy. Dansolihon.
-</p>
+                </div>
 
-<a href="#" class="read-btn">
-Read More
-</a>
+            @endforeach
 
-</div>
+        </div>
 
-</div>
+    @endif
 
-<div class="blog-card">
 
-<img src="{{ asset('images/recognition.jpg') }}">
+    <div class="blog-grid">
 
-<div class="blog-content">
+        @forelse($news as $article)
 
-<div class="blog-date">
-June 12, 2026
-</div>
+            <div class="blog-card">
 
-<h2>128th Philippine Independence Day</h2>
+                <img src="{{ $article['cover_image'] ?: asset('images/default-news.jpg') }}">
 
-<p>
-Barons Society participated in the Independence Day celebration,
-honoring the nation's heroes through service and patriotism.
-</p>
+                <div class="blog-content">
 
-<a href="#" class="read-btn">
-Read More
-</a>
+                    <div class="blog-date">
+                        {{ \Carbon\Carbon::parse($article['published_date'])->format('F d, Y') }}
+                    </div>
 
-</div>
+                    <h2>
+                        {{ $article['title'] }}
+                    </h2>
 
-</div>
+                    <p>
+                        {{ $article['summary'] }}
+                    </p>
 
-</div>
+                    <a
+                        href="{{ route('news.show',$article['slug']) }}"
+                        class="read-btn">
+
+                        Read More
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        @empty
+
+            <p>No news available.</p>
+
+        @endforelse
+
+    </div>
 
 </div>
 
