@@ -173,7 +173,7 @@ font-size:18px;
 
 .class-row{
     display:grid;
-    grid-template-columns:2fr 1.4fr 1fr 1fr auto;
+    grid-template-columns:80px 2fr 1.5fr 1fr 1fr auto;
     align-items:center;
     gap:20px;
     padding:20px 25px;
@@ -290,6 +290,18 @@ font-size:18px;
     font-weight:bold;
 }
 
+.class-logo{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+
+.class-logo img{
+    width:65px;
+    height:65px;
+    object-fit:cover;
+}
+
 /* Responsive */
 
 @media(max-width:1000px){
@@ -323,10 +335,10 @@ Barons Society Incorporated
 </div>
 
 <div class="nav-links">
-<a href="/">Home</a>
-<a href="/blogs">News and Updates</a>
-<a href="/classes" class="active">Classes</a>
-<a href="#">Bylaws</a>
+<a href="{{ url('/') }}">Home</a>
+<a href="{{ url('/blogs') }}" >News and Updates</a>
+<a href="{{ url('/classes') }}" class="active">Classes</a>
+<a href="{{ url('/bylaws') }}">Bylaws</a>
 </div>
 
 </div>
@@ -355,46 +367,58 @@ The Barons Society has a rich history of classes that have contributed to the gr
 
 <div class="class-card">
 
-    <div class="class-row">
+<div class="class-row">
 
-        <!-- Class -->
-        <div class="class-info">
-            <div class="class-number">
-                Class {{ $class['class_number'] }}
-            </div>
+    <!-- Class Logo -->
+    <div class="class-logo">
 
-            <div class="class-name">
-                {{ $class['class_name'] }}
-            </div>
+        @if(!empty($class['class_logo']))
+            <img src="{{ $class['class_logo'] }}" alt="{{ $class['class_name'] }}">
+        @else
+            <img src="{{ asset('images/default-class-logo.png') }}" alt="Default Logo">
+        @endif
+
+    </div>
+
+    <!-- Class -->
+    <div class="class-info">
+
+        <div class="class-number">
+            Class {{ $class['class_number'] }}
         </div>
 
-        <!-- Corps Commander -->
-        <div class="summary-item">
-            <span class="label">Corps Commander</span>
-            <strong>{{ $class['corps_commander'] }}</strong>
-        </div>
-
-        <!-- Members -->
-        <div class="summary-item">
-            <span class="label">Members</span>
-            <strong>{{ count($class['members']) }} Alumni</strong>
-        </div>
-
-        <!-- Batch -->
-        <div class="summary-item">
-            <span class="label">Batch</span>
-            <strong>{{ $class['batch_year'] }}</strong>
-        </div>
-
-        <!-- Button -->
-        <div class="button-area">
-            <button class="view-btn">
-                View Members ▼
-            </button>
+        <div class="class-name">
+            {{ $class['class_name'] }}
         </div>
 
     </div>
 
+    <!-- Corps Commander -->
+    <div class="summary-item">
+        <span class="label">Corps Commander</span>
+        <strong>{{ $class['corps_commander'] }}</strong>
+    </div>
+
+    <!-- Members -->
+    <div class="summary-item">
+        <span class="label">Members</span>
+        <strong>{{ count($class['members']) }} Alumni</strong>
+    </div>
+
+    <!-- Batch -->
+    <div class="summary-item">
+        <span class="label">Batch</span>
+        <strong>{{ $class['batch_year'] }}</strong>
+    </div>
+
+    <!-- Button -->
+    <div class="button-area">
+        <button class="view-btn">
+            View Members ▼
+        </button>
+    </div>
+
+</div>
     <div class="class-content">
 
         <div class="members-list">

@@ -10,3 +10,6 @@ Route::get('/', function () {
 Route::get('/blogs', [BlogController::class, 'index'])->name('blogs.index');
 Route::get('/blogs/{slug}', [BlogController::class, 'show'])->name('news.show');
 Route::get('/classes', [ClassController::class, 'index']);
+Route::get('/bylaws', function () {
+    return view('bylaws');
+});

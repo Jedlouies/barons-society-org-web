@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Barons Society | Updates</title>
+<title>Barons Society | Bylaws</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -307,6 +307,146 @@ font-size:18px;
     font-size:14px;
 }
 
+/* ===========================
+BYLAWS
+=========================== */
+
+.bylaws-section{
+    padding:70px 0;
+}
+
+.bylaws-wrapper{
+    background:#fff;
+    border-radius:16px;
+    padding:50px;
+    box-shadow:0 10px 30px rgba(0,0,0,.08);
+}
+
+.document-header{
+    text-align:center;
+    margin-bottom:40px;
+    border-bottom:2px solid #f1f1f1;
+    padding-bottom:25px;
+}
+
+.document-header h2{
+    font-size:34px;
+    color:#111;
+}
+
+.document-header p{
+    margin-top:8px;
+    color:#777;
+    font-size:17px;
+}
+
+.notice-box{
+    background:#fff9e8;
+    border-left:5px solid #d4af37;
+    padding:20px;
+    border-radius:8px;
+    margin-bottom:40px;
+}
+
+.notice-box strong{
+    display:block;
+    margin-bottom:10px;
+    color:#111;
+}
+
+.notice-box p{
+    color:#555;
+    line-height:1.8;
+}
+
+.toc{
+    background:#fafafa;
+    border:1px solid #ececec;
+    border-radius:10px;
+    padding:25px;
+    margin-bottom:45px;
+}
+
+.toc h3{
+    margin-bottom:15px;
+    color:#111;
+}
+
+.toc ul{
+    list-style:none;
+}
+
+.toc li{
+    margin-bottom:12px;
+}
+
+.toc a{
+    text-decoration:none;
+    color:#444;
+    transition:.3s;
+}
+
+.toc a:hover{
+    color:#d4af37;
+    padding-left:6px;
+}
+
+.article{
+    margin-bottom:50px;
+}
+
+.article h3{
+    display:inline-block;
+    background:#111;
+    color:#fff;
+    padding:8px 18px;
+    border-radius:30px;
+    font-size:15px;
+    margin-bottom:15px;
+}
+
+.article h4{
+    margin-bottom:15px;
+    font-size:28px;
+    color:#111;
+}
+
+.article p{
+    color:#555;
+    line-height:2;
+    text-align:justify;
+}
+
+.article ul{
+    margin-top:15px;
+    padding-left:25px;
+}
+
+.article li{
+    margin-bottom:10px;
+    line-height:1.8;
+}
+
+html{
+    scroll-behavior:smooth;
+}
+
+@media(max-width:768px){
+
+.bylaws-wrapper{
+    padding:25px;
+}
+
+.document-header h2{
+    font-size:26px;
+}
+
+.article h4{
+    font-size:22px;
+}
+
+}
+
 @media(max-width:900px){
 
     .footer-grid{
@@ -367,9 +507,9 @@ display:none;
 
 <div class="nav-links">
 <a href="{{ url('/') }}">Home</a>
-<a href="{{ url('/blogs') }}" class="active">News and Updates</a>
+<a href="{{ url('/blogs') }}" >News and Updates</a>
 <a href="{{ url('/classes') }}">Classes</a>
-<a href="{{ url('/bylaws') }}">Bylaws</a>
+<a href="{{ url('/bylaws') }}" class="active">Bylaws</a>
 </div>
 
 </div>
@@ -380,112 +520,180 @@ display:none;
 
 <div class="container hero-content">
 
-<h1>Latest News & Updates</h1>
+<h1>Bylaws</h1>
 
 <p>
-Stay informed with the latest announcements, community outreach,
-anniversary celebrations, recognition programs, and activities of
-the Barons Society ROTC Alumni Incorporated.
+    The Barons Society ROTC Alumni Incorporated is governed by a set of bylaws that outline the organization's structure, purpose, and operational guidelines. These bylaws serve as a framework for decision-making, membership rights and responsibilities, and the overall functioning of the society. They are designed to ensure transparency, accountability, and effective governance within the organization.
 </p>
 
 </div>
 
 </section>
-
-<section class="blog-section">
+<section class="bylaws-section">
 
 <div class="container">
 
-    @if(isset($announcements) && count($announcements) > 0)
+<div class="bylaws-wrapper">
 
-        <div class="blog-grid">
+<div class="document-header">
 
-            @foreach($announcements as $announcement)
+<h2>
+Barons Society ROTC Alumni Incorporated
+</h2>
 
-                <div class="blog-card">
+<p>
+Constitution and By-Laws
+</p>
 
-                    <img src="{{ $announcement['image'] ?: asset('images/default-news.jpg') }}">
+</div>
 
-                    <div class="blog-content">
+<div class="notice-box">
 
-                        <div class="blog-date">
-                            {{ \Carbon\Carbon::parse($announcement['created_at'])->format('F d, Y') }}
-                        </div>
+<strong>Notice</strong>
 
-                        <h2>{{ $announcement['title'] }}</h2>
+<p>
+This page contains the public version of the Constitution and By-Laws of the
+Barons Society ROTC Alumni Incorporated. It is intended to guide members and
+visitors regarding the organization's principles, governance, and membership.
+</p>
 
-                        <p>
-                            {{ Str::limit($announcement['description'],120) }}
-                        </p>
+</div>
 
-                        @if($announcement['button_link'])
+<div class="toc">
 
-                            <a
-                                href="{{ $announcement['button_link'] }}"
-                                class="read-btn">
+<h3>Contents</h3>
 
-                                {{ $announcement['button_text'] ?: 'Learn More' }}
+<ul>
 
-                            </a>
+<li><a href="#article1">Article I — Name</a></li>
 
-                        @endif
+<li><a href="#article2">Article II — Vision & Mission</a></li>
 
-                    </div>
+<li><a href="#article3">Article III — Objectives</a></li>
 
-                </div>
+<li><a href="#article4">Article IV — Membership</a></li>
 
-            @endforeach
+<li><a href="#article5">Article V — Officers</a></li>
 
-        </div>
+<li><a href="#article6">Article VI — Meetings</a></li>
 
-    @endif
+<li><a href="#article7">Article VII — Amendments</a></li>
+
+</ul>
+
+</div>
 
 
-    <div class="blog-grid">
+<div class="article" id="article1">
 
-        @forelse($news as $article)
+<h3>Article I</h3>
 
-            <div class="blog-card">
+<h4>Name</h4>
 
-                <img src="{{ $article['cover_image'] ?: asset('images/default-news.jpg') }}">
+<p>
 
-                <div class="blog-content">
+Place the contents of Article I here.
 
-                    <div class="blog-date">
-                        {{ \Carbon\Carbon::parse($article['published_date'])->format('F d, Y') }}
-                    </div>
+</p>
 
-                    <h2>
-                        {{ $article['title'] }}
-                    </h2>
+</div>
 
-                    <p>
-                        {{ $article['summary'] }}
-                    </p>
 
-                    <a
-                        href="{{ route('news.show',$article['slug']) }}"
-                        class="read-btn">
+<div class="article" id="article2">
 
-                        Read More
+<h3>Article II</h3>
 
-                    </a>
+<h4>Vision & Mission</h4>
 
-                </div>
+<p>
 
-            </div>
+Place the contents of Article II here.
 
-        @empty
+</p>
 
-            <p>No news available.</p>
+</div>
 
-        @endforelse
 
-    </div>
+<div class="article" id="article3">
+
+<h3>Article III</h3>
+
+<h4>Objectives</h4>
+
+<p>
+
+Place the contents of Article III here.
+
+</p>
+
+</div>
+
+
+<div class="article" id="article4">
+
+<h3>Article IV</h3>
+
+<h4>Membership</h4>
+
+<p>
+
+Place the contents here.
+
+</p>
+
+</div>
+
+
+<div class="article" id="article5">
+
+<h3>Article V</h3>
+
+<h4>Officers</h4>
+
+<p>
+
+Place the contents here.
+
+</p>
+
+</div>
+
+
+<div class="article" id="article6">
+
+<h3>Article VI</h3>
+
+<h4>Meetings</h4>
+
+<p>
+
+Place the contents here.
+
+</p>
+
+</div>
+
+
+<div class="article" id="article7">
+
+<h3>Article VII</h3>
+
+<h4>Amendments</h4>
+
+<p>
+
+Place the contents here.
+
+</p>
+
+</div>
+
+</div>
 
 </div>
 
 </section>
+
 
 <footer class="footer">
 

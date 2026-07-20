@@ -916,7 +916,7 @@ transform:translateY(0) scale(1);
             <a href="{{ url('/') }}" class="active">Home</a>
             <a href="{{ url('/blogs') }}">News and Updates</a>
             <a href="{{ url('/classes') }}">Classes</a>
-            <a href="#">Bylaws</a>
+            <a href="{{ url('/bylaws') }}">Bylaws</a>
         </div>
     </div>
 </nav>
