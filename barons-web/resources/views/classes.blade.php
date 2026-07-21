@@ -319,6 +319,100 @@ font-size:18px;
         columns:1;
     }
 }
+
+/* FOOTER */
+
+.footer{
+    background:#111;
+    color:#fff;
+    padding:80px 0 30px;
+}
+
+.footer-grid{
+    display:grid;
+    grid-template-columns:2fr 1fr 1fr;
+    gap:60px;
+}
+
+.footer-logo{
+    display:flex;
+    align-items:center;
+    gap:15px;
+    margin-bottom:25px;
+}
+
+.footer-logo img{
+    width:70px;
+    height:70px;
+    border-radius:50%;
+    object-fit:cover;
+}
+
+.footer-logo h3{
+    font-size:22px;
+    line-height:1.4;
+}
+
+.footer-about p{
+    color:#bbb;
+    line-height:1.8;
+}
+
+.footer-links,
+.footer-contact{
+    display:flex;
+    flex-direction:column;
+}
+
+.footer-links h3,
+.footer-contact h3{
+    margin-bottom:25px;
+    color:#d4af37;
+}
+
+.footer-links a{
+    color:#bbb;
+    text-decoration:none;
+    margin-bottom:12px;
+    transition:.3s;
+}
+
+.footer-links a:hover{
+    color:#d4af37;
+    padding-left:8px;
+}
+
+.footer-contact p{
+    color:#bbb;
+    margin-bottom:15px;
+}
+
+.socials{
+    margin-top:20px;
+    display:flex;
+    gap:20px;
+    flex-wrap:wrap;
+}
+
+.socials a{
+    color:#bbb;
+    text-decoration:none;
+    transition:.3s;
+}
+
+.socials a:hover{
+    color:#d4af37;
+}
+
+.footer-bottom{
+    border-top:1px solid rgba(255,255,255,.1);
+    margin-top:60px;
+    padding-top:30px;
+    text-align:center;
+    color:#888;
+    font-size:14px;
+}
+
 </style>
 
 </head>
@@ -460,6 +554,65 @@ The Barons Society has a rich history of classes that have contributed to the gr
 </div>
 
 </section>
+
+<footer class="footer">
+
+    <div class="container">
+
+        <div class="footer-grid">
+
+            <!-- About -->
+            <div class="footer-about">
+                <div class="footer-logo">
+                    <img src="{{ asset('images/Barons Logo.png') }}" alt="" onerror="this.src='https://placehold.co/100x100/111/d4af37?text=BS'">
+                    <h3>Barons Society<br>ROTC Alumni Incorporated</h3>
+                </div>
+
+                <p>
+                    Building Brotherhood, Leadership, and Service through
+                    unity, patriotism, and community engagement. Honoring our
+                    legacy while inspiring future generations.
+                </p>
+            </div>
+
+            <!-- Quick Links -->
+            <div class="footer-links">
+                <h3>Quick Links</h3>
+
+                <a href="#home-section">Home</a>
+                <a href="#blogs-section">Blogs</a>
+                <a href="#activities-section">Activities</a>
+                <a href="#gallery-section">Gallery</a>
+                <a href="#">Accomplishments</a>
+                <a href="#">Contact</a>
+            </div>
+
+            <!-- Contact -->
+            <div class="footer-contact">
+                <h3>Contact Us</h3>
+
+                <p>📍 Cagayan de Oro City, Philippines</p>
+                <p>📧 info@baronssociety.org</p>
+                <p>📞 +63 912 345 6789</p>
+
+                <div class="socials">
+                    <a href="#">Facebook</a>
+                    <a href="#">YouTube</a>
+                    <a href="#">Instagram</a>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="footer-bottom">
+            © {{ date('Y') }} Barons Society ROTC Alumni Incorporated. SEC No. 2022080064500-05.
+            All Rights Reserved.
+        </div>
+
+    </div>
+
+</footer>
+
 
 <script>
 
