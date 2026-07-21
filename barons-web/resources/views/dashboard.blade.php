@@ -560,11 +560,10 @@ nav{
         </a>
 
         <div class="nav-links">
-            <a href="{{ url('/') }}">Home</a>
-            <a href="{{ url('/blogs') }}">News and Updates</a>
-            <a href="{{ url('/classes') }}">Classes</a>
-            <a href="{{ url('/bylaws') }}">Bylaws</a>
             <a href="{{ url('/dashboard') }}" class="active">Dashboard</a>
+            <a href="{{ url('/blogs') }}">News and Updates</a>
+            <a href="{{ url('/member-classes') }}">Classes</a>
+            <a href="{{ url('/bylaws') }}">Bylaws</a>
 
             <!-- Robust Native Form Logout Button -->
             <form action="{{ route('logout') }}" method="POST" style="display: inline;">
@@ -580,7 +579,6 @@ nav{
 
 <section class="hero">
     <div class="container hero-content">
-        <span class="hero-badge">Alumni Portal</span>
         <h1>Member Dashboard</h1>
         <p>
             Welcome to the Barons Society official member portal. Stay updated with current society activities, review class directories, and access internal alumni resources.

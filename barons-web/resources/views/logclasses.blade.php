@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Barons Society | Updates</title>
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
+<title>Barons Society | Classes</title>
+
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="icon" href="https://barons-society.onrender.com/images/Barons%20Logo.png" type="image/png">
 
@@ -13,21 +13,21 @@
 <style>
 
 *{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family:'Poppins',sans-serif;
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Poppins,sans-serif;
 }
 
 body{
-    background:#f7f7f7;
-    color:#222;
+background:#f5f5f5;
+color:#222;
 }
 
 .container{
-    width:90%;
-    max-width:1200px;
-    margin:auto;
+width:90%;
+max-width:1200px;
+margin:auto;
 }
 
 /* ================= NAVBAR ================= */
@@ -146,6 +146,7 @@ nav{
         font-size:18px;
     }
 }
+
 /* HERO */
 
 .hero{
@@ -174,69 +175,174 @@ nav{
     color:#ddd;
 }
 
-/* BLOGS */
+/* ACCORDION */
 
-.blog-section{
-    padding:80px 0;
+/* ===========================
+   CLASSES SECTION
+=========================== */
+
+.classes{
+    padding:60px 0;
 }
 
-.blog-grid{
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    gap:35px;
-}
-
-.blog-card{
-    background:white;
-    border-radius:20px;
+.class-card{
+    background:#fff;
+    border-radius:14px;
+    margin-bottom:18px;
+    border:1px solid #ececec;
+    box-shadow:0 8px 18px rgba(0,0,0,.08);
     overflow:hidden;
-    box-shadow:0 10px 25px rgba(0,0,0,.08);
-    transition:.35s;
 }
 
-.blog-card:hover{
-    transform:translateY(-8px);
+/* Entire row */
+
+.class-row{
+    display:grid;
+    grid-template-columns:80px 2fr 1.5fr 1fr 1fr auto;
+    align-items:center;
+    gap:20px;
+    padding:20px 25px;
 }
 
-.blog-card img{
-    width:100%;
-    height:230px;
-    object-fit:cover;
+/* Left */
+
+.class-info{
+    display:flex;
+    flex-direction:column;
 }
 
-.blog-content{
+.class-number{
+    font-size:26px;
+    font-weight:700;
+    color:#111;
+}
+
+.class-name{
+    color:#d4af37;
+    font-size:14px;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    margin-top:3px;
+}
+
+/* Summary */
+
+.summary-item{
+    display:flex;
+    flex-direction:column;
+}
+
+.summary-item .label{
+    font-size:11px;
+    text-transform:uppercase;
+    color:#999;
+    margin-bottom:5px;
+    letter-spacing:1px;
+}
+
+.summary-item strong{
+    font-size:15px;
+    color:#111;
+    font-weight:600;
+}
+
+/* Button */
+
+.button-area{
+    display:flex;
+    justify-content:flex-end;
+}
+
+.view-btn{
+    background:#111;
+    color:#fff;
+    border:none;
+    padding:10px 22px;
+    border-radius:30px;
+    cursor:pointer;
+    transition:.3s;
+    font-size:14px;
+    font-weight:600;
+}
+
+.view-btn:hover{
+    background:#d4af37;
+    color:#111;
+}
+
+/* Members */
+
+.class-content{
+    display:none;
+    border-top:1px solid #eee;
     padding:25px;
 }
 
-.blog-date{
-    color:#999;
-    font-size:14px;
-    margin-bottom:10px;
+.class-content.active{
+    display:block;
 }
 
-.blog-content h2{
-    font-size:23px;
+.members-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
     margin-bottom:15px;
 }
 
-.blog-content p{
-    color:#555;
-    line-height:1.7;
+.members-header h3{
+    font-size:18px;
 }
 
-.read-btn{
-    display:inline-block;
-    margin-top:20px;
-    padding:12px 22px;
-    background:#111;
-    color:white;
-    text-decoration:none;
-    border-radius:8px;
-    transition:.3s;
+.members-header span{
+    color:#666;
+    font-size:14px;
 }
 
-.read-btn:hover{
-    background:#d4af37;
+.members-list ol{
+    columns:2;
+    column-gap:60px;
+    padding-left:20px;
+}
+
+.members-list li{
+    margin-bottom:8px;
+    line-height:1.6;
+    color:#444;
+}
+
+.members-list li::marker{
+    color:#d4af37;
+    font-weight:bold;
+}
+
+.class-logo{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+
+.class-logo img{
+    width:65px;
+    height:65px;
+    object-fit:cover;
+}
+
+/* Responsive */
+
+@media(max-width:1000px){
+
+    .class-row{
+        grid-template-columns:1fr;
+        gap:15px;
+    }
+
+    .button-area{
+        justify-content:flex-start;
+    }
+
+    .members-list ol{
+        columns:1;
+    }
 }
 
 /* FOOTER */
@@ -332,34 +438,7 @@ nav{
     font-size:14px;
 }
 
-@media(max-width:900px){
-
-    .footer-grid{
-        grid-template-columns:1fr;
-        gap:40px;
-    }
-
-    .footer-logo{
-        flex-direction:column;
-        text-align:center;
-    }
-}
-.logo{
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    color: white;
-    font-size: 20px;
-    font-weight: 600;
-}
-
-.logo img{
-    width: 45px;
-    height: 45px;
-    border-radius: 50%; 
-    object-fit: cover;
-}
-
+/* Logout CTA Button */
 .nav-logout-btn{
     background:rgba(212,175,55,0.15);
     color:#d4af37 !important;
@@ -386,25 +465,10 @@ nav{
 }
 
 
-@media(max-width:900px){
-
-.blog-grid{
-grid-template-columns:1fr;
-}
-
-.hero h1{
-font-size:40px;
-}
-
-.nav-links{
-display:none;
-}
-
-}
-
 </style>
 
 </head>
+
 <body>
 
 <nav>
@@ -413,15 +477,15 @@ display:none;
 
 <div class="logo">
 <img src="{{ asset('images/Barons Logo.png') }}">
-<span>Barons Society Incorporated</span>
+Barons Society Incorporated
 </div>
 
 <div class="nav-links">
 <a href="{{ url('/dashboard') }}">Dashboard</a>
-<a href="{{ url('/blogs') }}" class="active">News and Updates</a>
-<a href="{{ url('/member-classes') }}">Classes</a>
+<a href="{{ url('/blogs') }}">News and Updates</a>
+<a href="{{ url('/member-classes') }}" class="active">Classes</a>
 <a href="{{ url('/bylaws') }}">Bylaws</a>
-            <form action="{{ route('logout') }}" method="POST" style="display: inline;">
+ <form action="{{ route('logout') }}" method="POST" style="display: inline;">
                 @csrf
                 <button type="submit" class="nav-logout-btn">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -438,108 +502,113 @@ display:none;
 
 <div class="container hero-content">
 
-<h1>Latest News & Updates</h1>
+<h1>Barons Classes</h1>
 
 <p>
-Stay informed with the latest announcements, community outreach,
-anniversary celebrations, recognition programs, and activities of
-the Barons Society ROTC Alumni Incorporated.
+The Barons Society has a rich history of classes that have contributed to the growth and development of the organization. Each class represents a unique group of individuals who have come together to make a difference in their communities and beyond. Explore the various classes below to learn more about their members, achievements, and impact on the Barons Society.
 </p>
 
 </div>
 
 </section>
 
-<section class="blog-section">
+<section class="classes">
 
-<div class="container" id="latest-updates-section">
+<div class="container">
 
-    @if(isset($announcements) && count($announcements) > 0)
+@foreach($classes as $class)
 
-        <div class="blog-grid">
+<div class="class-card">
 
-            @foreach($announcements as $announcement)
+<div class="class-row">
 
-                <div class="blog-card">
+    <!-- Class Logo -->
+    <div class="class-logo">
 
-                    <img src="{{ $announcement['image'] ?: asset('images/default-news.jpg') }}">
+        @if(!empty($class['class_logo']))
+            <img src="{{ $class['class_logo'] }}" alt="{{ $class['class_name'] }}">
+        @else
+            <img src="{{ asset('images/default-class-logo.png') }}" alt="Default Logo">
+        @endif
 
-                    <div class="blog-content">
+    </div>
 
-                        <div class="blog-date">
-                            {{ \Carbon\Carbon::parse($announcement['created_at'])->format('F d, Y') }}
-                        </div>
+    <!-- Class -->
+    <div class="class-info">
 
-                        <h2>{{ $announcement['title'] }}</h2>
+        <div class="class-number">
+            Class {{ $class['class_number'] }}
+        </div>
 
-                        <p>
-                            {{ Str::limit($announcement['description'],120) }}
-                        </p>
+        <div class="class-name">
+            {{ $class['class_name'] }}
+        </div>
 
-                        @if($announcement['button_link'])
+    </div>
 
-                            <a
-                                href="{{ $announcement['button_link'] }}"
-                                class="read-btn">
+    <!-- Corps Commander -->
+    <div class="summary-item">
+        <span class="label">Corps Commander</span>
+        <strong>{{ $class['corps_commander'] }}</strong>
+    </div>
 
-                                {{ $announcement['button_text'] ?: 'Learn More' }}
+    <!-- Members -->
+    <div class="summary-item">
+        <span class="label">Members</span>
+        <strong>{{ count($class['members']) }} Alumni</strong>
+    </div>
 
-                            </a>
+    <!-- Batch -->
+    <div class="summary-item">
+        <span class="label">Batch</span>
+        <strong>{{ $class['batch_year'] }}</strong>
+    </div>
 
-                        @endif
+    <!-- Button -->
+    <div class="button-area">
+        <button class="view-btn">
+            View Members ▼
+        </button>
+    </div>
 
-                    </div>
+</div>
+    <div class="class-content">
 
-                </div>
+        <div class="members-list">
 
-            @endforeach
+            <div class="members-header">
+                <h3>Class Members</h3>
+                <span>{{ count($class['members']) }} Alumni</span>
+            </div>
+
+            <ol>
+
+                @foreach($class['members'] as $member)
+
+                <li>
+                    {{ $member['last_name'] }},
+                    {{ $member['first_name'] }}
+
+                    @if(!empty($member['middle_name']))
+                        {{ strtoupper(substr($member['middle_name'],0,1)) }}.
+                    @endif
+
+                    @if(!empty($member['suffix']))
+                        {{ $member['suffix'] }}
+                    @endif
+                </li>
+
+                @endforeach
+
+            </ol>
 
         </div>
 
-    @endif
-
-
-    <div class="blog-grid">
-
-        @forelse($news as $article)
-
-            <div class="blog-card">
-
-                <img src="{{ $article['cover_image'] ?: asset('images/default-news.jpg') }}">
-
-                <div class="blog-content">
-
-                    <div class="blog-date">
-                        {{ \Carbon\Carbon::parse($article['published_date'])->format('F d, Y') }}
-                    </div>
-
-                    <h2>
-                        {{ $article['title'] }}
-                    </h2>
-
-                    <p>
-                        {{ $article['summary'] }}
-                    </p>
-
-                    <a
-                        href="{{ route('news.show',$article['slug']) }}"
-                        class="read-btn">
-
-                        Read More
-
-                    </a>
-
-                </div>
-
-            </div>
-
-        @empty
-
-            <p>No news available.</p>
-
-        @endforelse
-
     </div>
+
+</div>
+
+@endforeach
 
 </div>
 
@@ -554,7 +623,7 @@ the Barons Society ROTC Alumni Incorporated.
             <!-- About -->
             <div class="footer-about">
                 <div class="footer-logo">
-                    <img src="{{ asset('images/Barons Logo.png') }}" alt="">
+                    <img src="{{ asset('images/Barons Logo.png') }}" alt="" onerror="this.src='https://placehold.co/100x100/111/d4af37?text=BS'">
                     <h3>Barons Society<br>ROTC Alumni Incorporated</h3>
                 </div>
 
@@ -584,13 +653,37 @@ the Barons Society ROTC Alumni Incorporated.
         </div>
 
         <div class="footer-bottom">
-            © {{ date('Y') }} Barons Society ROTC Alumni Incorporated.
+            © {{ date('Y') }} Barons Society ROTC Alumni Incorporated. SEC No. 2022080064500-05.
             All Rights Reserved.
         </div>
 
     </div>
 
 </footer>
+
+
+<script>
+
+
+document.querySelectorAll(".view-btn").forEach(button => {
+
+    button.addEventListener("click", function () {
+
+        const card = this.closest(".class-card");
+        const content = card.querySelector(".class-content");
+
+        content.classList.toggle("active");
+
+        this.textContent = content.classList.contains("active")
+            ? "Hide Members ▲"
+            : "View Members ▼";
+
+    });
+
+});
+</script>
+
+
 
 </body>
 </html>

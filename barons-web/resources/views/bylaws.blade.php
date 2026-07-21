@@ -70,7 +70,7 @@ nav{
 .nav-links{
     display:flex;
     align-items:center;
-    gap:35px;
+    gap:28px;
 }
 
 .nav-links a{
@@ -79,6 +79,7 @@ nav{
     font-weight:500;
     transition:.3s;
     position:relative;
+    font-size:15px;
 }
 
 .nav-links a:hover{
@@ -110,16 +111,40 @@ nav{
     width:100%;
 }
 
+/* Logout CTA Button */
+.nav-logout-btn{
+    background:rgba(212,175,55,0.15);
+    color:#d4af37 !important;
+    border:1px solid #d4af37;
+    padding:8px 20px;
+    border-radius:30px;
+    font-weight:600 !important;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    transition:.3s ease;
+    cursor:pointer;
+}
+
+.nav-logout-btn:hover{
+    background:#d4af37;
+    color:#111 !important;
+    transform:translateY(-2px);
+    box-shadow:0 4px 12px rgba(212,175,55,.3);
+}
+
+.nav-logout-btn::after{
+    display:none !important;
+}
+
 @media(max-width:900px){
+    .nav-links{
+        display:none;
+    }
 
-.nav-links{
-display:none;
-}
-
-.logo{
-font-size:18px;
-}
-
+    .logo{
+        font-size:18px;
+    }
 }
 /* HERO */
 
@@ -619,6 +644,33 @@ display:none;
 
 }
 
+/* Logout CTA Button */
+.nav-logout-btn{
+    background:rgba(212,175,55,0.15);
+    color:#d4af37 !important;
+    border:1px solid #d4af37;
+    padding:8px 20px;
+    border-radius:30px;
+    font-weight:600 !important;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    transition:.3s ease;
+    cursor:pointer;
+}
+
+.nav-logout-btn:hover{
+    background:#d4af37;
+    color:#111 !important;
+    transform:translateY(-2px);
+    box-shadow:0 4px 12px rgba(212,175,55,.3);
+}
+
+.nav-logout-btn::after{
+    display:none !important;
+}
+
+
 </style>
 
 </head>
@@ -634,10 +686,17 @@ display:none;
 </div>
 
 <div class="nav-links">
-<a href="{{ url('/') }}">Home</a>
+<a href="{{ url('/dashboard') }}">Dashboard</a>
 <a href="{{ url('/blogs') }}" >News and Updates</a>
-<a href="{{ url('/classes') }}">Classes</a>
+<a href="{{ url('/member-classes') }}">Classes</a>
 <a href="{{ url('/bylaws') }}" class="active">Bylaws</a>
+<form action="{{ route('logout') }}" method="POST" style="display: inline;">
+                @csrf
+                <button type="submit" class="nav-logout-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    Logout
+                </button>
+            </form>
 </div>
 
 </div>
