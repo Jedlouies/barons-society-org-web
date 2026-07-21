@@ -564,6 +564,7 @@ nav{
             <a href="{{ url('/blogs') }}">News and Updates</a>
             <a href="{{ url('/member-classes') }}">Classes</a>
             <a href="{{ url('/bylaws') }}">Bylaws</a>
+            <a href="{{ url('/financial') }}">Funds</a>
 
             <!-- Robust Native Form Logout Button -->
             <form action="{{ route('logout') }}" method="POST" style="display: inline;">

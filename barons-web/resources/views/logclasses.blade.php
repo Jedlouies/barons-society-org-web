@@ -485,6 +485,7 @@ Barons Society Incorporated
 <a href="{{ url('/blogs') }}">News and Updates</a>
 <a href="{{ url('/member-classes') }}" class="active">Classes</a>
 <a href="{{ url('/bylaws') }}">Bylaws</a>
+<a href="{{ url('/financial') }}">Funds</a>
  <form action="{{ route('logout') }}" method="POST" style="display: inline;">
                 @csrf
                 <button type="submit" class="nav-logout-btn">
