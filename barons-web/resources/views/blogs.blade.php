@@ -224,7 +224,7 @@ font-size:18px;
 
 .footer-grid{
     display:grid;
-    grid-template-columns:2fr 1fr 1fr;
+    grid-template-columns:2fr 1fr;
     gap:60px;
 }
 
@@ -394,7 +394,7 @@ the Barons Society ROTC Alumni Incorporated.
 
 <section class="blog-section">
 
-<div class="container">
+<div class="container" id="latest-updates-section">
 
     @if(isset($announcements) && count($announcements) > 0)
 
@@ -507,17 +507,6 @@ the Barons Society ROTC Alumni Incorporated.
                 </p>
             </div>
 
-            <!-- Quick Links -->
-            <div class="footer-links">
-                <h3>Quick Links</h3>
-
-                <a href="#home-section">Home</a>
-                <a href="#blogs-section">Blogs</a>
-                <a href="#activities-section">Activities</a>
-                <a href="#gallery-section">Gallery</a>
-                <a href="#">Accomplishments</a>
-                <a href="#">Contact</a>
-            </div>
 
             <!-- Contact -->
             <div class="footer-contact">
