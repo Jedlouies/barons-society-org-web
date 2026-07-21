@@ -7,7 +7,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="icon" href="{{asset('images/Barons Logo.png')}}" type="image/png">
+<link rel="icon" href="https://barons-society.onrender.com/images/Barons%20Logo.png" type="image/png">
 
 
 <style>
