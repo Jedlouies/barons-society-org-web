@@ -7,7 +7,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="icon" href="{{ asset('images/Barons Logo.png') }}" type="image/png">
+<link rel="icon" href="{{ asset('images/BaronsLogo.png') }}" type="image/png">
 <link rel="stylesheet" href="https://unpkg.com/aos@2.3.4/dist/aos.css"/>
 <link rel="stylesheet" href="{{ asset('css/style.css') }}">
 
@@ -15,35 +15,11 @@
 
 <body>
 
-<div id="announcementModal" class="announcement-modal">
-    <div class="announcement-card">
-        <button class="close-announcement">&times;</button>
-        <div class="announcement-header">
-            <img src="{{ asset('images/Barons Logo.png') }}" alt="Barons Society Logo" onerror="this.src='https://placehold.co/100x100/111/d4af37?text=BS'">
-            <span>OFFICIAL ANNOUNCEMENT</span>
-        </div>
-
-        <div class="announcement-body">
-            <div class="announcement-image">
-                <img src="{{ asset('images/cap.jpg') }}" alt="Barons Cap" onerror="this.src='https://placehold.co/400x500/1c1c1c/d4af37?text=Barons+Cap'">
-            </div>
-            <div class="announcement-content">
-                <small>NEW OFFICIAL MERCHANDISE</small>
-                <h2>Official Barons Society Cap</h2>
-                <p>
-                    Wear the newest official Barons Society Cap during meetings, outreach activities, reunions and official events.
-                    Represent our brotherhood with pride, discipline, and unity wherever you go. Limited stocks available.
-                </p>
-                <a href="#" class="announcement-btn">Avail Now</a>
-            </div>
-        </div>
-    </div>
-</div>
 
 <nav>
     <div class="nav-container">
         <a href="{{ url('/') }}" class="logo">
-            <img src="{{asset('images/Barons Logo.png')}}" alt="Barons Society Logo" onerror="this.src='https://placehold.co/100x100/111/d4af37?text=BS'">
+            <img src="{{asset('images/BaronsLogo.png')}}" alt="Barons Society Logo" onerror="this.src='https://placehold.co/100x100/111/d4af37?text=BS'">
             <span>Barons Society Incorporated</span>
         </a>
 
@@ -307,7 +283,7 @@
             <!-- About -->
             <div class="footer-about">
                 <div class="footer-logo">
-                    <img src="{{ asset('images/Barons Logo.png') }}" alt="Barons Logo" onerror="this.src='https://placehold.co/100x100/111/d4af37?text=BS'">
+                    <img src="{{ asset('images/BaronsLogo.png') }}" alt="Barons Logo" onerror="this.src='https://placehold.co/100x100/111/d4af37?text=BS'">
                     <h3>Barons Society<br>ROTC Alumni Incorporated</h3>
                 </div>
 

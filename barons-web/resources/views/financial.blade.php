@@ -9,7 +9,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="icon" href="https://barons-society.onrender.com/images/Barons%20Logo.png" type="image/png">
+<link rel="icon" href="{{ asset('images/BaronsLogo.png') }}" type="image/png">
 <link rel="stylesheet" href="{{ asset('css/style.css') }}">
 </head>
 
@@ -18,7 +18,7 @@
 <nav>
     <div class="nav-container">
         <a href="{{ url('/') }}" class="logo">
-            <img src="{{ asset('images/Barons Logo.png') }}" onerror="this.src='https://placehold.co/100x100/111/d4af37?text=BS'" alt="Barons Logo">
+            <img src="{{ asset('images/BaronsLogo.png') }}" onerror="this.src='https://placehold.co/100x100/111/d4af37?text=BS'" alt="Barons Logo">
             <span>Barons Society Incorporated</span>
         </a>
 
@@ -346,7 +346,7 @@
         <div class="footer-grid">
             <div class="footer-about">
                 <div class="footer-logo">
-                    <img src="{{ asset('images/Barons Logo.png') }}" alt="" onerror="this.src='https://placehold.co/100x100/111/d4af37?text=BS'">
+                    <img src="{{ asset('images/BaronsLogo.png') }}" alt="" onerror="this.src='https://placehold.co/100x100/111/d4af37?text=BS'">
                     <h3>Barons Society<br>ROTC Alumni Incorporated</h3>
                 </div>
                 <p>

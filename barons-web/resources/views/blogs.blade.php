@@ -7,7 +7,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="icon" href="https://barons-society.onrender.com/images/Barons%20Logo.png" type="image/png">
+<link rel="icon" href="{{ asset('images/BaronsLogo.png') }}" type="image/png">
 <link rel="stylesheet" href="{{ asset('css/style.css') }}">
 
 </head>
@@ -18,7 +18,7 @@
 <div class="container nav-container">
 
 <div class="logo">
-<img src="{{ asset('images/Barons Logo.png') }}">
+<img src="{{ asset('images/BaronsLogo.png') }}">
 <span>Barons Society Incorporated</span>
 </div>
 
@@ -161,7 +161,7 @@ the Barons Society ROTC Alumni Incorporated.
             <!-- About -->
             <div class="footer-about">
                 <div class="footer-logo">
-                    <img src="{{ asset('images/Barons Logo.png') }}" alt="">
+                    <img src="{{ asset('images/BaronsLogo.png') }}" alt="">
                     <h3>Barons Society<br>ROTC Alumni Incorporated</h3>
                 </div>
 
