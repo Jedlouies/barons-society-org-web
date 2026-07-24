@@ -369,35 +369,61 @@ footer{
 <form id="loginForm" method="POST" action="{{ route('login') }}">
     @csrf
 
-    <div class="form-group">
-        <label>Email Address</label>
+<div class="form-group">
+    <label>Email</label>
 
-        <div class="input-container">
-            <input
-                id="email"
-                type="email"
-                name="email"
-                class="form-control"
-                placeholder="Enter your email"
-                value="{{ old('email') }}"
-                required>
-        </div>
+    <div class="input-container">
+
+        <svg width="20" height="20" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor"
+             stroke-width="2"
+             stroke-linecap="round"
+             stroke-linejoin="round">
+
+            <path d="M4 4h16v16H4z"/>
+            <polyline points="22,6 12,13 2,6"/>
+
+        </svg>
+
+        <input
+            type="email"
+            name="email"
+            id="email"
+            class="form-control"
+            placeholder="Enter your email"
+            value="{{ old('email') }}"
+            required>
+
     </div>
+</div>
+<div class="form-group">
+    <label>Password</label>
 
-    <div class="form-group">
-        <label>Password</label>
+    <div class="input-container">
 
-        <div class="input-container">
-            <input
-                id="password"
-                type="password"
-                name="password"
-                class="form-control"
-                placeholder="Enter your password"
-                required>
-        </div>
+        <svg width="20" height="20"
+             viewBox="0 0 24 24"
+             fill="none"
+             stroke="currentColor"
+             stroke-width="2"
+             stroke-linecap="round"
+             stroke-linejoin="round">
+
+            <rect x="3" y="11" width="18" height="11" rx="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+
+        </svg>
+
+        <input
+            type="password"
+            name="password"
+            id="password"
+            class="form-control"
+            placeholder="Enter your password"
+            required>
+
     </div>
-
+</div>
     <button type="submit" class="login-btn">
         Login
     </button>
