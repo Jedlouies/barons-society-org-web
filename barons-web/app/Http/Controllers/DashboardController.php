@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Exception;
 
 class DashboardController extends Controller
 {
@@ -14,8 +15,12 @@ class DashboardController extends Controller
      */
     public function index()
     {
-        // Dynamic or fallback statistics for the dashboard
-        $totalMembers = User::count(a) ?: 500;
+        try {
+            $totalMembers = User::count() ?: 500;
+        } catch (Exception $e) {
+            $totalMembers = 500;
+        }
+
         $totalClasses = 12;
         $totalBlogs   = 8;
         $totalPhotos  = 45;

@@ -11,73 +11,59 @@ class BlogController extends Controller
 
     public function __construct()
     {
-        $this->supabaseUrl = env('SUPABASE_URL');
-        $this->supabaseKey = env('SUPABASE_ANON_KEY');
+        $this->supabaseUrl = rtrim(env('SUPABASE_URL', ''), '/');
+        $this->supabaseKey = env('SUPABASE_ANON_KEY', env('SUPABASE_KEY', ''));
     }
 
     public function index()
     {
-        // Active announcements
-        $announcementsResponse = Http::withHeaders([
-            'apikey' => $this->supabaseKey,
+        $headers = [
+            'apikey'        => $this->supabaseKey,
             'Authorization' => 'Bearer ' . $this->supabaseKey,
-        ])->get(
-            $this->supabaseUrl .
-            '/rest/v1/announcements?select=*&active=eq.true&order=created_at.desc'
+            'Accept'        => 'application/json',
+        ];
+
+        // Fetch active announcements
+        $announcementsResponse = Http::withHeaders($headers)->get(
+            $this->supabaseUrl . '/rest/v1/announcements?select=*&active=eq.true&order=created_at.desc'
         );
 
-        // Latest news
-        $newsResponse = Http::withHeaders([
-            'apikey' => $this->supabaseKey,
-            'Authorization' => 'Bearer ' . $this->supabaseKey,
-        ])->get(
-            $this->supabaseUrl .
-            '/rest/v1/news?select=*&order=published_date.desc'
+        // Fetch latest news
+        $newsResponse = Http::withHeaders($headers)->get(
+            $this->supabaseUrl . '/rest/v1/news?select=*&order=published_date.desc'
         );
 
         return view('blogs', [
-            'announcements' => $announcementsResponse->successful()
-                ? $announcementsResponse->json()
-                : [],
-            'news' => $newsResponse->successful()
-                ? $newsResponse->json()
-                : [],
+            'announcements' => $announcementsResponse->successful() ? $announcementsResponse->json() : [],
+            'news'          => $newsResponse->successful() ? $newsResponse->json() : [],
         ]);
     }
 
     public function show($slug)
     {
-        // Get the news article
-        $newsResponse = Http::withHeaders([
-            'apikey' => $this->supabaseKey,
+        $headers = [
+            'apikey'        => $this->supabaseKey,
             'Authorization' => 'Bearer ' . $this->supabaseKey,
-        ])->get(
-            $this->supabaseUrl .
-            '/rest/v1/news?slug=eq.' . urlencode($slug) . '&select=*'
+            'Accept'        => 'application/json',
+        ];
+
+        $newsResponse = Http::withHeaders($headers)->get(
+            $this->supabaseUrl . '/rest/v1/news?slug=eq.' . urlencode($slug) . '&select=*'
         );
 
-        $article = $newsResponse->json()[0] ?? null;
+        $article = $newsResponse->successful() ? ($newsResponse->json()[0] ?? null) : null;
 
         if (!$article) {
             abort(404);
         }
 
-        // Get gallery images for the article
-        $imagesResponse = Http::withHeaders([
-            'apikey' => $this->supabaseKey,
-            'Authorization' => 'Bearer ' . $this->supabaseKey,
-        ])->get(
-            $this->supabaseUrl .
-            '/rest/v1/news_images?news_id=eq.' .
-            $article['id'] .
-            '&select=*&order=display_order.asc'
+        $imagesResponse = Http::withHeaders($headers)->get(
+            $this->supabaseUrl . '/rest/v1/news_images?news_id=eq.' . $article['id'] . '&select=*&order=display_order.asc'
         );
 
         return view('news-details', [
             'article' => $article,
-            'images' => $imagesResponse->successful()
-                ? $imagesResponse->json()
-                : [],
+            'images'  => $imagesResponse->successful() ? $imagesResponse->json() : [],
         ]);
     }
 }

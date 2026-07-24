@@ -10,7 +10,7 @@ use Carbon\Carbon;
 class FinancialController extends Controller
 {
     /**
-     * Category metadata dictionary defined directly in Controller (No Model Needed).
+     * Category metadata dictionary.
      */
     private static function categoryMeta(): array
     {
@@ -34,18 +34,17 @@ class FinancialController extends Controller
     }
 
     /**
-     * Display the dynamic financial dashboard by fetching directly from Supabase REST API.
+     * Display the financial dashboard by fetching directly from Supabase REST API.
      */
     public function index(Request $request)
     {
         $supabaseUrl = env('SUPABASE_URL');
         $supabaseKey = env('SUPABASE_KEY', env('SUPABASE_ANON_KEY'));
 
-        // Fetch records directly from Supabase PostgREST API
         $transactions = $this->fetchFromSupabaseApi($request, $supabaseUrl, $supabaseKey);
         $allTransactions = $this->fetchAllFromSupabaseApi($supabaseUrl, $supabaseKey);
 
-        // Overall Top Card Summaries (All-Time Cash Totals)
+        // All-Time Top Card Summary Totals
         $totalInflow = $allTransactions->where('flow_type', 'INCOME')->sum('amount');
         $totalOutflow = $allTransactions->where('flow_type', 'EXPENSE')->sum('amount');
         $netCash = $totalInflow - $totalOutflow;
@@ -53,7 +52,7 @@ class FinancialController extends Controller
             ->where('category', 'dues')
             ->sum('amount');
 
-        // Filter transactions specifically for breakdown percentage calculations based on request parameters
+        // Dynamic Filtering for Breakdown Cards based on request inputs
         $breakdownTransactions = $allTransactions->filter(function ($item) use ($request) {
             if (empty($item->transaction_date)) {
                 return true;
@@ -62,21 +61,17 @@ class FinancialController extends Controller
             $txDate = Carbon::parse($item->transaction_date)->format('Y-m-d');
             $txYear = Carbon::parse($item->transaction_date)->format('Y');
 
-            // 1. If start_date and end_date range are provided
             if ($request->filled('start_date') && $request->filled('end_date')) {
                 return $txDate >= $request->start_date && $txDate <= $request->end_date;
             }
 
-            // 2. If fiscal year parameter is provided and not set to 'all'
             if ($request->filled('year') && $request->year !== 'all') {
                 return $txYear == $request->year;
             }
 
-            // Default: Include all transactions for All-Time Totals
             return true;
         });
 
-        // Compute period totals for the filtered breakdown dataset
         $periodInflowTotal = $breakdownTransactions->where('flow_type', 'INCOME')->sum('amount');
         $periodOutflowTotal = $breakdownTransactions->where('flow_type', 'EXPENSE')->sum('amount');
 
@@ -85,7 +80,7 @@ class FinancialController extends Controller
 
         $categoryMeta = self::categoryMeta();
 
-        // Compute Inflow Breakdown using filtered period data
+        // Inflow Breakdown
         $inflowBreakdown = [];
         foreach ($inflowCategories as $catKey) {
             $amount = $breakdownTransactions->where('flow_type', 'INCOME')
@@ -103,7 +98,7 @@ class FinancialController extends Controller
             ];
         }
 
-        // Compute Outflow Breakdown using filtered period data
+        // Outflow Breakdown
         $outflowBreakdown = [];
         foreach ($outflowCategories as $catKey) {
             $amount = $breakdownTransactions->where('flow_type', 'EXPENSE')
@@ -121,7 +116,7 @@ class FinancialController extends Controller
             ];
         }
 
-        // Extract distinct available transaction years from Supabase records
+        // Available transaction years from Supabase
         $availableYears = $allTransactions->map(function ($item) {
             return !empty($item->transaction_date) ? Carbon::parse($item->transaction_date)->format('Y') : null;
         })->filter()->unique()->sortDesc()->values()->all();
@@ -144,7 +139,7 @@ class FinancialController extends Controller
     }
 
     /**
-     * Store a new financial entry directly into Supabase via REST API.
+     * Store new entry in Supabase via REST API.
      */
     public function store(Request $request)
     {
@@ -163,7 +158,6 @@ class FinancialController extends Controller
         $supabaseUrl = env('SUPABASE_URL');
         $supabaseKey = env('SUPABASE_KEY', env('SUPABASE_ANON_KEY'));
 
-        // Post record directly to Supabase REST API
         Http::withHeaders([
             'apikey'        => $supabaseKey,
             'Authorization' => 'Bearer ' . $supabaseKey,
@@ -175,9 +169,6 @@ class FinancialController extends Controller
             ->with('success', 'Treasury entry successfully recorded in Supabase!');
     }
 
-    /**
-     * Helper to fetch filtered transactions directly from Supabase PostgREST API without Eloquent.
-     */
     private function fetchFromSupabaseApi(Request $request, string $url, string $key): Collection
     {
         $queryParams = [
@@ -208,7 +199,6 @@ class FinancialController extends Controller
         if ($response->successful()) {
             $categoryMeta = self::categoryMeta();
             
-            // Map raw JSON objects to attach computed label and badge_class fields directly
             return collect($response->json())->map(function ($item) use ($categoryMeta) {
                 $obj = (object) $item;
                 $cat = $obj->category ?? '';
@@ -221,9 +211,6 @@ class FinancialController extends Controller
         return collect();
     }
 
-    /**
-     * Fetch all transactions for summary computations without Eloquent.
-     */
     private function fetchAllFromSupabaseApi(string $url, string $key): Collection
     {
         $endpoint = rtrim($url, '/') . '/rest/v1/treasury_transactions?select=*';
