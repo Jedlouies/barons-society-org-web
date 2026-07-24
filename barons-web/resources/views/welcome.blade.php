@@ -317,26 +317,6 @@
 </footer>
 
 <script>
-const modal = document.getElementById("announcementModal");
-const closeBtn = document.querySelector(".close-announcement");
-
-// Show only once per browser session
-if(sessionStorage.getItem("baronsAnnouncement") === "shown"){
-    modal.style.display = "none";
-}else{
-    sessionStorage.setItem("baronsAnnouncement","shown");
-}
-
-closeBtn.addEventListener("click",function(){
-    modal.style.display = "none";
-});
-
-window.addEventListener("click",function(e){
-    if(e.target === modal){
-        modal.style.display = "none";
-    }
-});
-</script>
 
 <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
 <script>
