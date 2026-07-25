@@ -37,17 +37,13 @@ Barons Society Incorporated
 </nav>
 
 <section class="hero">
-
-<div class="container hero-content">
-
-<h1>Barons Classes</h1>
-
-<p>
-The Barons Society has a rich history of classes that have contributed to the growth and development of the organization. Each class represents a unique group of individuals who have come together to make a difference in their communities and beyond. Explore the various classes below to learn more about their members, achievements, and impact on the Barons Society.
-</p>
-
-</div>
-
+    <div class="container hero-header-flex">
+        <div class="hero-content">
+            <h1>Barons Members</h1>
+            <p>
+The Barons Society has a rich history of classes that have contributed to the growth and development of the organization. Each class represents a unique group of individuals who have come together to make a difference in their communities and beyond. Explore the various classes below to learn more about their members, achievements, and impact on the Barons Society.            </p>
+        </div>
+    </div>
 </section>
 
 <section class="classes">

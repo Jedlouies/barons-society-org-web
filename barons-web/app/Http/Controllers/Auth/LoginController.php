@@ -50,11 +50,10 @@ class LoginController extends Controller
         }
 
         try {
-            // Trim URL to prevent trailing slash duplication
             $supabaseUrl = rtrim($supabaseUrl, '/');
 
             // 2. Query Supabase Auth API endpoint for password grant token
-            $response = Http::withoutVerifying() // Prevents local cURL SSL issues
+            $response = Http::withoutVerifying()
                 ->withHeaders([
                     'apikey'       => $supabaseKey,
                     'Content-Type' => 'application/json',
@@ -64,7 +63,6 @@ class LoginController extends Controller
                     'password' => $credentials['password'],
                 ]);
 
-            // 3. Handle failed authentication response from Supabase
             if ($response->failed()) {
                 $errorData = $response->json();
                 $errorMessage = $errorData['error_description'] 
@@ -81,7 +79,7 @@ class LoginController extends Controller
                 ])->onlyInput('email');
             }
 
-            // 4. Extract token & user data from Supabase response
+            // 3. Extract tokens & user data from Supabase Auth response
             $data = $response->json();
             $accessToken  = $data['access_token'] ?? null;
             $refreshToken = $data['refresh_token'] ?? null;
@@ -91,31 +89,70 @@ class LoginController extends Controller
                 throw new \Exception('User payload missing or invalid from Supabase response.');
             }
 
+            // 4. Query Supabase REST API for matching record in `members` table
+            $userEmail  = strtolower($supabaseUser['email']);
+            $memberData = null;
+
+            try {
+                $memberResponse = Http::withoutVerifying()
+                    ->withHeaders([
+                        'apikey'        => $supabaseKey,
+                        'Authorization' => 'Bearer ' . $accessToken,
+                    ])
+                    ->get("{$supabaseUrl}/rest/v1/members", [
+                        'select' => '*',
+                        'email'  => 'eq.' . $userEmail,
+                        'limit'  => 1,
+                    ]);
+
+                if ($memberResponse->successful() && !empty($memberResponse->json())) {
+                    $memberData = $memberResponse->json()[0];
+                }
+            } catch (\Exception $e) {
+                Log::warning('Failed to fetch member details from Supabase: ' . $e->getMessage());
+            }
+
             // 5. Synchronize local Laravel user model safely
-            $userEmail = strtolower($supabaseUser['email']);
             $user = User::where('email', $userEmail)->first();
 
             if (!$user) {
                 $user = new User();
                 $user->email = $userEmail;
-                $user->name  = $supabaseUser['user_metadata']['full_name'] 
-                    ?? strstr($userEmail, '@', true);
                 $user->password = bcrypt(\Illuminate\Support\Str::random(24));
-                $user->email_verified_at = !empty($supabaseUser['email_confirmed_at']) ? now() : null;
-                $user->save();
             }
+
+            // Build full name from first_name and last_name
+            $memberFullName = null;
+            if ($memberData) {
+                $firstName = $memberData['first_name'] ?? '';
+                $lastName  = $memberData['last_name'] ?? '';
+                $memberFullName = trim("{$firstName} {$lastName}");
+            }
+
+            $user->name = !empty($memberFullName) 
+                ? $memberFullName 
+                : ($supabaseUser['user_metadata']['full_name'] ?? strstr($userEmail, '@', true));
+
+            $user->email_verified_at = !empty($supabaseUser['email_confirmed_at']) ? now() : null;
+            $user->save();
 
             // 6. Log in user locally in Laravel Session
             Auth::login($user, true);
 
-            // 7. Store Supabase tokens in session
+            // 7. Store Supabase tokens & Member details in session
             $request->session()->put('supabase_access_token', $accessToken);
             $request->session()->put('supabase_refresh_token', $refreshToken);
             $request->session()->put('supabase_user_id', $supabaseUser['id']);
 
+            if ($memberData) {
+                $request->session()->put('member_position', $memberData['position'] ?? $memberData['role'] ?? 'Member');
+                $request->session()->put('member_details', $memberData);
+            } else {
+                $request->session()->put('member_position', 'Alumni Member');
+            }
+
             $request->session()->regenerate();
 
-            // 8. Redirect to the dashboard route
             return redirect()->route('dashboard');
 
         } catch (\Exception $e) {
@@ -154,7 +191,6 @@ class LoginController extends Controller
             }
         }
 
-        // Clear Laravel auth session
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

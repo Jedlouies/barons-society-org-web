@@ -28,7 +28,6 @@
             <a href="{{ url('/bylaws') }}">Bylaws</a>
             <a href="{{ url('/financial') }}">Funds</a>
 
-            <!-- Robust Native Form Logout Button -->
             <form action="{{ route('logout') }}" method="POST" style="display: inline;">
                 @csrf
                 <button type="submit" class="nav-logout-btn">
@@ -41,11 +40,13 @@
 </nav>
 
 <section class="hero">
-    <div class="container hero-content">
-        <h1>Member Dashboard</h1>
-        <p>
-            Welcome to the Barons Society official member portal. Stay updated with current society activities, review class directories, and access internal alumni resources.
-        </p>
+    <div class="container hero-header-flex">
+        <div class="hero-content">
+            <h1>Dashboard</h1>
+            <p>
+                Welcome to the Barons Society official member portal. Stay updated with current society activities, review class directories, and access internal alumni resources.
+            </p>
+        </div>
     </div>
 </section>
 
@@ -98,8 +99,45 @@
         <!-- Dashboard Two-Column Grid -->
         <div class="dashboard-grid">
 
-            <!-- Left Panel: Recent Activity Log -->
-            <div>
+            <!-- Left Panel Column -->
+            <div style="display: flex; flex-direction: column; gap: 24px;">
+
+                <!-- Official Announcements Panel -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-header-title">
+                            
+                            <h3>Official Announcements</h3>
+                        </div>
+                       
+                    </div>
+
+                    <div class="announcements-list">
+                        @forelse ($announcements as $announcement)
+                            <article class="announcement-item {{ strtolower($announcement->type) === 'urgent' ? 'urgent' : 'general' }}">
+                                <div class="announcement-meta">
+                                    <span class="announcement-badge {{ strtolower($announcement->type) === 'urgent' ? 'badge-urgent' : 'badge-general' }}">
+                                        {{ ucfirst($announcement->type) }}
+                                    </span>
+                                    <time class="announcement-date">
+                                        Posted: {{ $announcement->created_at->format('M d, Y') }}
+                                    </time>
+                                </div>
+
+                                <h4 class="announcement-title">{{ $announcement->title }}</h4>
+                                <p class="announcement-text">{{ $announcement->content }}</p>
+
+                                
+                            </article>
+                        @empty
+                            <div style="text-align: center; color: #888; padding: 20px 0; font-size: 14px;">
+                                No active announcements at this time.
+                            </div>
+                        @endforelse
+                    </div>                
+                </div>
+
+                <!-- Recent Activity Log Panel -->
                 <div class="panel">
                     <div class="panel-header">
                         <h3>Recent Society Activity</h3>
@@ -139,26 +177,22 @@
                         </li>
                     </ul>
                 </div>
+
             </div>
 
             <!-- Right Panel: User Status Card & Quick Actions -->
             <div>
-                <!-- User Profile Summary Card -->
+                <!-- Dynamic Profile Summary Card -->
                 <div class="user-profile-card">
-                    <span class="user-badge">Active Alumni Member</span>
-                    <h3>{{ Auth::user()->name ?? 'Barons Member' }}</h3>
+                    <span class="user-badge">{{ $memberPosition ?? 'Active Alumni Member' }}</span>
+                    <h3>
+                        @if (!empty($memberDetails['first_name']) || !empty($memberDetails['last_name']))
+                            {{ trim(($memberDetails['first_name'] ?? '') . ' ' . ($memberDetails['last_name'] ?? '')) }}
+                        @else
+                            {{ Auth::user()->name ?? 'Barons Member' }}
+                        @endif
+                    </h3>
                     <p>{{ Auth::user()->email ?? 'member@baronssociety.org' }}</p>
-
-                    <div class="user-meta-list">
-                        <div class="user-meta-item">
-                            <span>Status:</span>
-                            <strong>SEC Verified</strong>
-                        </div>
-                        <div class="user-meta-item">
-                            <span>Access Level:</span>
-                            <strong>Alumni Member Portal</strong>
-                        </div>
-                    </div>
                 </div>
 
                 <!-- Quick Actions Panel -->
@@ -168,7 +202,7 @@
                     </div>
 
                     <div class="quick-actions-grid">
-                        <a href="{{ url('/classes') }}" class="action-btn">
+                        <a href="{{ url('/member-classes') }}" class="action-btn">
                             <span>Browse Classes & Members</span>
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
                         </a>
@@ -191,10 +225,48 @@
     </div>
 </section>
 
+<!-- Floating Action Button (Visible Only to Admins) -->
+@if(in_array(strtolower($memberPosition ?? ''), ['admin', 'administrator']))
+<div class="fab-container">
+    <button class="fab-btn" id="fabToggle" type="button" aria-label="Add New Item">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+    </button>
+
+    <div class="fab-dropdown" id="fabMenu">
+        <a href="{{ url('/blogs/create') }}" class="fab-item">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1m2 13a2 2 0 0 1-2-2V7m2 13a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2m-4-3H9M9 12h6m-6 4h4"/></svg>
+            <span>Add News and Updates</span>
+        </a>
+        <a href="javascript:void(0)" class="fab-item" onclick="openMemberModal()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/>
+            </svg>
+            <span>Add New Member</span>
+        </a>
+        <a href="javascript:void(0)" class="fab-item" onclick="openClassModal()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+            <span>Add New Class</span>
+        </a>
+        <!-- Triggers modal via JS -->
+        <a href="javascript:void(0)" class="fab-item" onclick="openAnnouncementModal()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <span>Add Announcement</span>
+        </a>
+    </div>
+</div>
+
+<!-- Include Modal Partial -->
+@include('partials.add-announcement-modal')
+@include('partials.add-member-modal')
+@include('partials.add-class-modal')
+@endif
+
 <footer class="footer">
     <div class="container">
         <div class="footer-grid">
-            <!-- About -->
             <div class="footer-about">
                 <div class="footer-logo">
                     <img src="{{ asset('images/BaronsLogo.png') }}" alt="" onerror="this.src='https://placehold.co/100x100/111/d4af37?text=BS'">
@@ -208,7 +280,6 @@
                 </p>
             </div>
 
-            <!-- Contact -->
             <div class="footer-contact">
                 <h3>Contact Us</h3>
 
@@ -230,6 +301,28 @@
         </div>
     </div>
 </footer>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const fabToggle = document.getElementById('fabToggle');
+    const fabMenu   = document.getElementById('fabMenu');
+
+    if (fabToggle && fabMenu) {
+        fabToggle.addEventListener('click', function (e) {
+            e.stopPropagation();
+            fabMenu.classList.toggle('active');
+            fabToggle.classList.toggle('open');
+        });
+
+        document.addEventListener('click', function (e) {
+            if (!fabMenu.contains(e.target) && !fabToggle.contains(e.target)) {
+                fabMenu.classList.remove('active');
+                fabToggle.classList.remove('open');
+            }
+        });
+    }
+});
+</script>
 
 </body>
 </html>

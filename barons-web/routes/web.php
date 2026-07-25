@@ -35,7 +35,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/financial', [FinancialController::class, 'index'])->name('financial');
     Route::post('/financial/transaction', [FinancialController::class, 'store'])->name('financial.store');
 
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    Route::post('/announcements', [DashboardController::class, 'storeAnnouncement'])->name('announcements.store');
+    Route::post('/members', [DashboardController::class, 'storeMember'])->name('members.store');
+    Route::post('/classes', [DashboardController::class, 'storeClass'])->name('classes.store');
 });

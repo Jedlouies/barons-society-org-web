@@ -42,17 +42,12 @@
 </nav>
 
 <section class="hero">
-
-<div class="container hero-content">
-
-<h1>Constitution and Bylaws</h1>
-
-<p>
-    The Barons Society ROTC Alumni Incorporated is governed by official corporate guidelines registered with the Securities and Exchange Commission of the Philippines. These bylaws outline our administrative structure, fraternal duties, and commitment to leadership and service.
-</p>
-
-</div>
-
+    <div class="container hero-header-flex">
+        <div class="hero-content">
+            <h1>Constitution and Bylaws</h1>
+            <p>
+The Barons Society ROTC Alumni Incorporated is governed by official corporate guidelines registered with the Securities and Exchange Commission of the Philippines. These bylaws outline our administrative structure, fraternal duties, and commitment to leadership and service.        </div>
+    </div>
 </section>
 
 <section class="bylaws-section">

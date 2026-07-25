@@ -42,19 +42,11 @@
 </nav>
 
 <section class="hero">
-
-<div class="container hero-content">
-
-<h1>Latest News & Updates</h1>
-
-<p>
-Stay informed with the latest announcements, community outreach,
-anniversary celebrations, recognition programs, and activities of
-the Barons Society ROTC Alumni Incorporated.
-</p>
-
-</div>
-
+    <div class="container hero-header-flex">
+        <div class="hero-content">
+            <h1>Latest News & Updates</h1>
+            <p>
+Stay informed with the latest announcements, community outreach, anniversary celebrations, recognition programs, and activities of the Barons Society ROTC Alumni Incorporated.    </div>
 </section>
 
 <section class="blog-section">
