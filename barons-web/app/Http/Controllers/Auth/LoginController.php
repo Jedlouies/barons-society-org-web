@@ -8,7 +8,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 class LoginController extends Controller
 {
@@ -21,9 +20,6 @@ class LoginController extends Controller
         return view('login');
     }
 
-    /**
-     * Authenticate user with Supabase and initiate session.
-     */
     public function login(Request $request)
     {
         $credentials = $request->validate([
@@ -44,7 +40,6 @@ class LoginController extends Controller
         try {
             $supabaseUrl = rtrim($supabaseUrl, '/');
 
-            // 1. Authenticate against Supabase Auth API
             $response = Http::withoutVerifying()
                 ->withHeaders([
                     'apikey'       => $supabaseKey,
@@ -74,6 +69,7 @@ class LoginController extends Controller
             $data         = $response->json();
             $accessToken  = $data['access_token'] ?? null;
             $refreshToken = $data['refresh_token'] ?? null;
+            $expiresIn    = $data['expires_in'] ?? 3600; 
             $supabaseUser = $data['user'] ?? null;
 
             if (!$supabaseUser || empty($supabaseUser['email'])) {
@@ -102,13 +98,12 @@ class LoginController extends Controller
                 Log::warning('Failed to fetch member details from Supabase: ' . $e->getMessage());
             }
 
-            // 3. Find or sync local Laravel user record
             $user = User::where('email', $userEmail)->first();
 
             if (!$user) {
                 $user = new User();
                 $user->email = $userEmail;
-                $user->password = bcrypt(Str::random(24));
+                $user->password = bcrypt(\Illuminate\Support\Str::random(24));
             }
 
             $memberFullName = null;
@@ -125,20 +120,22 @@ class LoginController extends Controller
             $user->email_verified_at = !empty($supabaseUser['email_confirmed_at']) ? now() : null;
             $user->save();
 
-            // 4. Log in user locally in Laravel Auth guard
             Auth::login($user);
 
-            // 5. Store tokens and details in Session for CheckSupabaseSession Middleware
+            $request->session()->regenerate();
+
             $request->session()->put('supabase_access_token', $accessToken);
             $request->session()->put('supabase_refresh_token', $refreshToken);
             $request->session()->put('supabase_user_id', $supabaseUser['id']);
+            
+            $request->session()->put('supabase_token_expires_at', now()->addSeconds($expiresIn)->timestamp);
 
             if ($memberData) {
                 $request->session()->put('member_position', $memberData['position']);
                 $request->session()->put('member_details', $memberData);
             }
 
-            $request->session()->regenerate();
+            
 
             return redirect()->route('dashboard');
 
@@ -153,9 +150,6 @@ class LoginController extends Controller
         }
     }
 
-    /**
-     * Invalidate session and log out user.
-     */
     public function logout(Request $request)
     {
         $supabaseUrl = config('services.supabase.url', env('SUPABASE_URL'));
