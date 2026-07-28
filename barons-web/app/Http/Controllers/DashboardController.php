@@ -253,7 +253,6 @@ public function index()
     $supabaseUrl = rtrim($supabaseUrl, '/');
     $classLogoUrl = null;
 
-    // 1. Upload Class Logo to Supabase Storage Bucket ('barons-images')
     if ($request->hasFile('class_logo')) {
         try {
             $file      = $request->file('class_logo');
@@ -283,7 +282,6 @@ public function index()
         }
     }
 
-    // 2. Prepare Payload matching public.classes schema
     $payload = [
         'class_name'      => $validated['class_name'],
         'class_number'    => !empty($validated['class_number']) ? (int) $validated['class_number'] : null,
@@ -293,7 +291,6 @@ public function index()
         'class_logo'      => $classLogoUrl,
     ];
 
-    // 3. Insert Record into Supabase `classes` Table
     try {
         $response = Http::withoutVerifying()->withHeaders([
             'apikey'        => $supabaseKey,

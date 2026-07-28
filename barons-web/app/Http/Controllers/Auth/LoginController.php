@@ -8,14 +8,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class LoginController extends Controller
 {
-    /**
-     * Display the member login form.
-     *
-     * @return \Illuminate\View\View
-     */
     public function showLoginForm()
     {
         if (Auth::check()) {
@@ -25,9 +21,11 @@ class LoginController extends Controller
         return view('login');
     }
 
+    /**
+     * Authenticate user with Supabase and initiate session.
+     */
     public function login(Request $request)
     {
-        // 1. Validate incoming form inputs
         $credentials = $request->validate([
             'email'    => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
@@ -46,7 +44,7 @@ class LoginController extends Controller
         try {
             $supabaseUrl = rtrim($supabaseUrl, '/');
 
-            // 2. Query Supabase Auth API endpoint for password grant token
+            // 1. Authenticate against Supabase Auth API
             $response = Http::withoutVerifying()
                 ->withHeaders([
                     'apikey'       => $supabaseKey,
@@ -73,8 +71,7 @@ class LoginController extends Controller
                 ])->onlyInput('email');
             }
 
-            // 3. Extract tokens & user data from Supabase Auth response
-            $data = $response->json();
+            $data         = $response->json();
             $accessToken  = $data['access_token'] ?? null;
             $refreshToken = $data['refresh_token'] ?? null;
             $supabaseUser = $data['user'] ?? null;
@@ -83,7 +80,6 @@ class LoginController extends Controller
                 throw new \Exception('User payload missing or invalid from Supabase response.');
             }
 
-            // 4. Query Supabase REST API for matching record in `members` table
             $userEmail  = strtolower($supabaseUser['email']);
             $memberData = null;
 
@@ -106,16 +102,15 @@ class LoginController extends Controller
                 Log::warning('Failed to fetch member details from Supabase: ' . $e->getMessage());
             }
 
-            // 5. Synchronize local Laravel user model safely
+            // 3. Find or sync local Laravel user record
             $user = User::where('email', $userEmail)->first();
 
             if (!$user) {
                 $user = new User();
                 $user->email = $userEmail;
-                $user->password = bcrypt(\Illuminate\Support\Str::random(24));
+                $user->password = bcrypt(Str::random(24));
             }
 
-            // Build full name from first_name and last_name
             $memberFullName = null;
             if ($memberData) {
                 $firstName = $memberData['first_name'] ?? '';
@@ -130,19 +125,17 @@ class LoginController extends Controller
             $user->email_verified_at = !empty($supabaseUser['email_confirmed_at']) ? now() : null;
             $user->save();
 
-            // 6. Log in user locally in Laravel Session
-            Auth::login($user, true);
+            // 4. Log in user locally in Laravel Auth guard
+            Auth::login($user);
 
-            // 7. Store Supabase tokens & Member details in session
+            // 5. Store tokens and details in Session for CheckSupabaseSession Middleware
             $request->session()->put('supabase_access_token', $accessToken);
             $request->session()->put('supabase_refresh_token', $refreshToken);
             $request->session()->put('supabase_user_id', $supabaseUser['id']);
 
             if ($memberData) {
-                $request->session()->put('member_position', $memberData['position'] ?? $memberData['role'] ?? 'Member');
+                $request->session()->put('member_position', $memberData['position']);
                 $request->session()->put('member_details', $memberData);
-            } else {
-                $request->session()->put('member_position', 'Alumni Member');
             }
 
             $request->session()->regenerate();
@@ -160,6 +153,9 @@ class LoginController extends Controller
         }
     }
 
+    /**
+     * Invalidate session and log out user.
+     */
     public function logout(Request $request)
     {
         $supabaseUrl = config('services.supabase.url', env('SUPABASE_URL'));

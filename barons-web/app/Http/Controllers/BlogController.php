@@ -23,12 +23,10 @@ class BlogController extends Controller
             'Accept'        => 'application/json',
         ];
 
-        // Fetch active announcements
         $announcementsResponse = Http::withHeaders($headers)->get(
             $this->supabaseUrl . '/rest/v1/announcements?select=*&active=eq.true&order=created_at.desc'
         );
 
-        // Fetch latest news
         $newsResponse = Http::withHeaders($headers)->get(
             $this->supabaseUrl . '/rest/v1/news?select=*&order=published_date.desc'
         );
