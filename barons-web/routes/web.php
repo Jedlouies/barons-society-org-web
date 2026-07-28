@@ -16,10 +16,7 @@ Route::get('/classes', [ClassController::class, 'index']);
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->name('login.post');
 
-Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
-Route::get('/logout', [LoginController::class, 'logout']);
-
-Route::middleware('auth', 'supabase.session')->group(function () {
+Route::middleware(['auth', 'supabase.session'])->group(function () {
     Route::get('/member-classes', [ClassController::class, 'index2']);
     Route::get('/bylaws', function () {
         return view('bylaws');

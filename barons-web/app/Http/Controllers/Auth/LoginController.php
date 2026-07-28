@@ -135,8 +135,6 @@ class LoginController extends Controller
                 $request->session()->put('member_details', $memberData);
             }
 
-            
-
             return redirect()->route('dashboard');
 
         } catch (\Exception $e) {
