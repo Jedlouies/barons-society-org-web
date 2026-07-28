@@ -25,12 +25,6 @@ class LoginController extends Controller
         return view('login');
     }
 
-    /**
-     * Handle authentication attempt using Supabase Auth REST API.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse
-     */
     public function login(Request $request)
     {
         // 1. Validate incoming form inputs
@@ -166,12 +160,6 @@ class LoginController extends Controller
         }
     }
 
-    /**
-     * Log the member out of both Laravel and Supabase sessions.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse
-     */
     public function logout(Request $request)
     {
         $supabaseUrl = config('services.supabase.url', env('SUPABASE_URL'));

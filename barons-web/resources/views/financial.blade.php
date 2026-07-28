@@ -60,7 +60,6 @@
             </div>
         @endif
 
-        <!-- OVERVIEW SUMMARY CARDS -->
         <div class="overview-cards-grid">
             <div class="fin-summary-card highlight">
                 <span class="card-title">Net Cash Available</span>
@@ -95,7 +94,6 @@
             </div>
         </div>
 
-        <!-- ENHANCED DATE RANGE & FISCAL YEAR FILTER FOR PERCENTAGE BREAKDOWN -->
         <div class="filter-control-card" id="breakdown-section">
             <form action="{{ route('financial') }}#breakdown-section" method="GET" id="dateFilterForm">
                 @foreach(request()->except(['year', 'start_date', 'end_date', 'page']) as $key => $value)
@@ -116,28 +114,23 @@
                         </div>
                     </div>
 
-                    <!-- Selected Period Badge -->
                     
                 </div>
 
-                <!-- Input Field Controls Grid -->
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; align-items: end;">
                     
-                    <!-- Start Date -->
                     <div>
                         <label for="start_date_input" style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 5px;">Start Date</label>
                         <input type="date" name="start_date" id="start_date_input" value="{{ request('start_date') }}" 
                                style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 13px; outline: none; background: #fff; color: #0f172a;">
                     </div>
 
-                    <!-- End Date -->
                     <div>
                         <label for="end_date_input" style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 5px;">End Date</label>
                         <input type="date" name="end_date" id="end_date_input" value="{{ request('end_date') }}" 
                                style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 13px; outline: none; background: #fff; color: #0f172a;">
                     </div>
 
-                    <!-- Fiscal Year Preset Dropdown -->
                     <div>
                         <label for="breakdown_year_select" style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 5px;">Fiscal Year Preset</label>
                         <select name="year" id="breakdown_year_select" onchange="clearCustomDatesAndSubmit()" 
@@ -152,7 +145,6 @@
                         </select>
                     </div>
 
-                    <!-- Action Buttons -->
                     <div style="display: flex; gap: 8px;">
                         <button type="submit" class="filter-btn-submit">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
@@ -162,12 +154,10 @@
                     </div>
                 </div>
 
-                <!-- Quick Date Pills -->
             </form>
         </div>
 
         <div class="grid-two-columns">
-            <!-- Funds In Breakdown -->
             <div class="panel-card">
                 <h3 class="income-header" style="display: flex; align-items: center;">
                     <span>Inflow Breakdown (Where Funds Come From)</span>
@@ -188,7 +178,6 @@
                 @endforelse
             </div>
 
-            <!-- Funds Out Breakdown -->
             <div class="panel-card">
                 <h3 class="expense-header" style="display: flex;  align-items: center;">
                     <span>Outflow Breakdown (Where Funds Go)</span>
@@ -224,7 +213,6 @@
                 </form>
             </div>
 
-            <!-- FILTER BUTTON TABS -->
             <div class="view-toggle-bar">
                 <div class="category-tabs">
                     <a href="{{ route('financial') }}#ledger-section" class="tab-btn {{ !request('flow_type') && !request('category') ? 'active' : '' }}">All Entries</a>
@@ -312,7 +300,6 @@
             <div class="form-group">
                 <label>Category</label>
                 <select name="category" id="modalCategory" required>
-                    <!-- Populated via Javascript -->
                 </select>
             </div>
 
