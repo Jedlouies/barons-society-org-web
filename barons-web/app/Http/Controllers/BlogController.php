@@ -2,67 +2,74 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class BlogController extends Controller
 {
-    protected string $supabaseUrl;
-    protected string $supabaseKey;
-
-    public function __construct()
-    {
-        $this->supabaseUrl = rtrim(env('SUPABASE_URL', ''), '/');
-        $this->supabaseKey = env('SUPABASE_ANON_KEY', env('SUPABASE_KEY', ''));
-    }
-
     public function index()
     {
-        $headers = [
-            'apikey'        => $this->supabaseKey,
-            'Authorization' => 'Bearer ' . $this->supabaseKey,
-            'Accept'        => 'application/json',
-        ];
+        $supabaseUrl = rtrim(config('services.supabase.url', env('SUPABASE_URL')), '/');
+        $supabaseKey = config('services.supabase.anon_key', env('SUPABASE_ANON_KEY'));
 
-        $announcementsResponse = Http::withHeaders($headers)->get(
-            $this->supabaseUrl . '/rest/v1/announcements?select=*&active=eq.true&order=created_at.desc'
-        );
+        $news = [];
 
-        $newsResponse = Http::withHeaders($headers)->get(
-            $this->supabaseUrl . '/rest/v1/news?select=*&order=published_date.desc'
-        );
+        if ($supabaseUrl && $supabaseKey) {
+            try {
+                $response = Http::withoutVerifying()
+                    ->withHeaders([
+                        'apikey'        => $supabaseKey,
+                        'Authorization' => 'Bearer ' . $supabaseKey,
+                    ])->get("{$supabaseUrl}/rest/v1/news", [
+                        'select' => '*',
+                        'order'  => 'published_date.desc,created_at.desc',
+                    ]);
 
-        return view('blogs', [
-            'announcements' => $announcementsResponse->successful() ? $announcementsResponse->json() : [],
-            'news'          => $newsResponse->successful() ? $newsResponse->json() : [],
-        ]);
+                if ($response->successful()) {
+                    $news = $response->json();
+                }
+            } catch (\Exception $e) {
+                Log::warning('Failed to fetch news from Supabase: ' . $e->getMessage());
+            }
+        }
+
+        return view('blogs', compact('news'));
     }
 
     public function show($slug)
     {
-        $headers = [
-            'apikey'        => $this->supabaseKey,
-            'Authorization' => 'Bearer ' . $this->supabaseKey,
-            'Accept'        => 'application/json',
-        ];
+        $supabaseUrl = rtrim(config('services.supabase.url', env('SUPABASE_URL')), '/');
+        $supabaseKey = config('services.supabase.anon_key', env('SUPABASE_ANON_KEY'));
 
-        $newsResponse = Http::withHeaders($headers)->get(
-            $this->supabaseUrl . '/rest/v1/news?slug=eq.' . urlencode($slug) . '&select=*'
-        );
+        $article = null;
 
-        $article = $newsResponse->successful() ? ($newsResponse->json()[0] ?? null) : null;
+        if ($supabaseUrl && $supabaseKey) {
+            try {
+                $response = Http::withoutVerifying()
+                    ->withHeaders([
+                        'apikey'        => $supabaseKey,
+                        'Authorization' => 'Bearer ' . $supabaseKey,
+                    ])->get("{$supabaseUrl}/rest/v1/news", [
+                        'select' => '*',
+                        'slug'   => 'eq.' . $slug,
+                        'limit'  => 1,
+                    ]);
 
-        if (!$article) {
-            abort(404);
+                if ($response->successful() && !empty($response->json())) {
+                    $article = $response->json()[0];
+                }
+            } catch (\Exception $e) {
+                Log::warning('Failed to fetch article details: ' . $e->getMessage());
+            }
         }
 
-        $imagesResponse = Http::withHeaders($headers)->get(
-            $this->supabaseUrl . '/rest/v1/news_images?news_id=eq.' . $article['id'] . '&select=*&order=display_order.asc'
-        );
+        if (!$article) {
+            abort(404, 'Article not found');
+        }
 
-        return view('news-details', [
-            'article' => $article,
-            'images'  => $imagesResponse->successful() ? $imagesResponse->json() : [],
-        ]);
+        return view('news-show', compact('article'));
     }
 
     public function store(Request $request)
@@ -76,33 +83,47 @@ class BlogController extends Controller
             'cover_image'    => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
         ]);
 
-        $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
-        $supabaseKey = env('SUPABASE_KEY', env('SUPABASE_ANON_KEY'));
+        $supabaseUrl = rtrim(config('services.supabase.url', env('SUPABASE_URL')), '/');
+        $supabaseKey = config('services.supabase.anon_key', env('SUPABASE_ANON_KEY'));
+
+        if (!$supabaseUrl || !$supabaseKey) {
+            return back()->withErrors(['news_error' => 'Supabase URL or Key is missing in environment settings.']);
+        }
+
         $coverImageUrl = null;
 
+        // 1. Upload Cover Image to Supabase Storage ("news-covers" bucket)
         if ($request->hasFile('cover_image')) {
             try {
                 $file = $request->file('cover_image');
-                $filename = 'news_' . time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
+                $extension = $file->getClientOriginalExtension() ?: 'jpg';
+                $filename = 'news_' . time() . '_' . Str::random(8) . '.' . $extension;
 
-                $storageResponse = Http::withHeaders([
-                    'apikey'        => $supabaseKey,
-                    'Authorization' => 'Bearer ' . $supabaseKey,
-                ])->attach(
-                    'file', file_get_contents($file->getRealPath()), $filename
-                )->post("{$supabaseUrl}/storage/v1/object/news-covers/{$filename}");
+                $storageResponse = Http::withoutVerifying()
+                    ->withHeaders([
+                        'apikey'        => $supabaseKey,
+                        'Authorization' => 'Bearer ' . $supabaseKey,
+                    ])->attach(
+                        'file', 
+                        file_get_contents($file->getRealPath()), 
+                        $filename
+                    )->post("{$supabaseUrl}/storage/v1/object/news-covers/{$filename}");
 
                 if ($storageResponse->successful()) {
                     $coverImageUrl = "{$supabaseUrl}/storage/v1/object/public/news-covers/{$filename}";
                 } else {
-                    Log::warning('Supabase Storage upload failed: ' . $storageResponse->body());
+                    Log::warning('Supabase Storage upload failed for news cover', [
+                        'status' => $storageResponse->status(),
+                        'body'   => $storageResponse->body(),
+                    ]);
                 }
             } catch (\Exception $e) {
-                Log::error('Error uploading cover image: ' . $e->getMessage());
+                Log::error('Error uploading news cover image: ' . $e->getMessage());
             }
         }
 
-        $slug = Str::slug($validated['title']) . '-' . Str::random(5);
+        // 2. Insert Record into Supabase `public.news` Table
+        $slug = Str::slug($validated['title']) . '-' . Str::random(6);
 
         $payload = [
             'title'          => $validated['title'],
@@ -114,15 +135,21 @@ class BlogController extends Controller
             'cover_image'    => $coverImageUrl,
         ];
 
-        $dbResponse = Http::withHeaders([
-            'apikey'        => $supabaseKey,
-            'Authorization' => 'Bearer ' . $supabaseKey,
-            'Content-Type'  => 'application/json',
-            'Prefer'        => 'return=representation',
-        ])->post("{$supabaseUrl}/rest/v1/news", $payload);
+        $dbResponse = Http::withoutVerifying()
+            ->withHeaders([
+                'apikey'        => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+                'Content-Type'  => 'application/json',
+                'Prefer'        => 'return=representation',
+            ])->post("{$supabaseUrl}/rest/v1/news", $payload);
 
         if ($dbResponse->failed()) {
-            return back()->withErrors(['news_error' => 'Failed to publish news article. Please try again.']);
+            Log::error('Failed to insert news entry into Supabase database', [
+                'status' => $dbResponse->status(),
+                'body'   => $dbResponse->body(),
+            ]);
+
+            return back()->withErrors(['news_error' => 'Database insert failed: ' . ($dbResponse->json()['message'] ?? $dbResponse->body())])->withInput();
         }
 
         return redirect()->route('blogs.index')->with('success', 'News article published successfully!');

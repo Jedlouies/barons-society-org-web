@@ -1,3 +1,4 @@
+<!-- Include Cropper.js -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 
@@ -9,7 +10,7 @@
         </div>
 
         @if($errors->has('news_error'))
-            <div class="alert-error" style="display: block; margin-bottom: 16px;">
+            <div class="alert-error" style="display: block; margin-bottom: 16px; background-color: #fee2e2; color: #dc2626; padding: 12px; border-radius: 8px;">
                 {{ $errors->first('news_error') }}
             </div>
         @endif
@@ -17,38 +18,45 @@
         <form id="newsForm" action="{{ route('blogs.store') }}" method="POST" enctype="multipart/form-data" onsubmit="handleNewsSubmit(event)">
             @csrf
 
+            <!-- Article Title -->
             <div class="form-group">
                 <label for="news_title">Article Title *</label>
-                <input type="text" name="title" id="news_title" placeholder="e.g. 36th Anniversary Celebration" required>
+                <input type="text" name="title" id="news_title" placeholder="e.g. 36th Anniversary Celebration" value="{{ old('title') }}" required>
             </div>
 
+            <!-- Published Date & Featured Flag -->
             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
                 <div class="form-group">
                     <label for="published_date">Published Date *</label>
-                    <input type="date" name="published_date" id="published_date" value="{{ date('Y-m-d') }}" required>
+                    <input type="date" name="published_date" id="published_date" value="{{ old('published_date', date('Y-m-d')) }}" required>
                 </div>
                 <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-top: 24px;">
-                    <input type="checkbox" name="featured" id="news_featured" value="1" style="width: 18px; height: 18px; cursor: pointer;">
+                    <input type="checkbox" name="featured" id="news_featured" value="1" {{ old('featured') ? 'checked' : '' }} style="width: 18px; height: 18px; cursor: pointer;">
                     <label for="news_featured" style="cursor: pointer; margin-bottom: 0;">Mark as Featured Article</label>
                 </div>
             </div>
 
+            <!-- Summary -->
             <div class="form-group">
                 <label for="news_summary">Summary / Excerpt</label>
-                <textarea name="summary" id="news_summary" rows="2" placeholder="Brief summary of the news article..."></textarea>
+                <textarea name="summary" id="news_summary" rows="2" placeholder="Brief summary of the news article...">{{ old('summary') }}</textarea>
             </div>
 
+            <!-- Main Content -->
             <div class="form-group">
                 <label for="news_content">Content *</label>
-                <textarea name="content" id="news_content" rows="5" placeholder="Write full article details here..." required></textarea>
+                <textarea name="content" id="news_content" rows="5" placeholder="Write full article details here..." required>{{ old('content') }}</textarea>
             </div>
 
+            <!-- Cover Image Upload with Crop Preview -->
             <div class="form-group">
-                <label for="news_cover_input">Cover Image (16:9 Aspect Ratio) *</label>
+                <label for="news_cover_input">Cover Image (Optional - 16:9 Aspect Ratio)</label>
                 <input type="file" id="news_cover_input" accept="image/jpeg,image/png,image/webp" onchange="previewAndCropNewsImage(event)">
                 
+                <!-- Hidden file input holding cropped blob -->
                 <input type="file" name="cover_image" id="cropped_news_cover" style="display: none;">
 
+                <!-- Crop Preview Container -->
                 <div id="newsCropContainer" style="display: none; margin-top: 12px; max-width: 100%; max-height: 350px;">
                     <img id="newsCropPreview" src="" style="max-width: 100%; display: block;">
                 </div>

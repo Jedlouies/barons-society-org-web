@@ -21,19 +21,24 @@ Route::middleware(['auth', 'supabase.session'])->group(function () {
     Route::get('/bylaws', function () {
         return view('bylaws');
     });
+    
+    // News & Updates Routes
     Route::get('/blogs', [BlogController::class, 'index'])->name('blogs.index');
+    Route::post('/blogs', [BlogController::class, 'store'])->name('blogs.store');
     Route::get('/blogs/{slug}', [BlogController::class, 'show'])->name('news.show');
 
+    // Financial Routes
     Route::get('/financial', [FinancialController::class, 'index'])->name('financial');
     Route::post('/financial/transaction', [FinancialController::class, 'store'])->name('financial.store');
 
+    // Dashboard & Admin Management Routes
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::post('/announcements', [DashboardController::class, 'storeAnnouncement'])->name('announcements.store');
     Route::post('/members', [DashboardController::class, 'storeMember'])->name('members.store');
     Route::post('/classes', [DashboardController::class, 'storeClass'])->name('classes.store');
-    Route::post('/news', [BlogController::class, 'store'])->name('')
     
+    // Auth Routes
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
     Route::get('/logout', [LoginController::class, 'logout']);
 });
