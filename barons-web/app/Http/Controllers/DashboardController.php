@@ -4,13 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Exception;
 
 class DashboardController extends Controller
 {
-public function index()
+    public function index()
     {
         try {
             $totalMembers = User::count() ?: 500;
@@ -27,7 +28,6 @@ public function index()
         if ($supabaseUrl && $supabaseKey) {
             $supabaseUrl = rtrim($supabaseUrl, '/');
 
-            // 1. Fetch active announcements
             try {
                 $response = Http::withoutVerifying()->withHeaders([
                     'apikey'        => $supabaseKey,
@@ -57,14 +57,13 @@ public function index()
                 $announcements = collect();
             }
 
-            // 2. Fetch classes for dropdown selection
             try {
                 $classResponse = Http::withoutVerifying()->withHeaders([
                     'apikey'        => $supabaseKey,
                     'Authorization' => 'Bearer ' . $supabaseKey,
                 ])->get("{$supabaseUrl}/rest/v1/classes", [
                     'select' => 'id, class_name, class_number, batch_year',
-                    'order'  => 'class_name.asc',
+                    'order'  => 'class_number.asc',
                 ]);
 
                 if ($classResponse->successful()) {
@@ -150,45 +149,54 @@ public function index()
             'email'          => 'required|email|max:255',
             'occupation'     => 'nullable|string|max:255',
             'company'        => 'nullable|string|max:255',
-            'profile_photo'  => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'business_name'  => 'nullable|string|max:255',
+            'facebook_url'   => 'nullable|url|max:500',
+            'profile_photo'  => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
         ]);
 
         $supabaseUrl = config('services.supabase.url', env('SUPABASE_URL'));
         $supabaseKey = config('services.supabase.anon_key', env('SUPABASE_ANON_KEY'));
 
         if (!$supabaseUrl || !$supabaseKey) {
-            return redirect()->back()->withErrors(['member_error' => 'Supabase configuration missing.']);
+            return redirect()->back()->withErrors(['member_error' => 'Supabase configuration missing.'])->withInput();
         }
 
         $supabaseUrl = rtrim($supabaseUrl, '/');
         $profilePhotoUrl = null;
 
+        // 1. Upload Profile Photo to Supabase Storage ("member-photos" bucket)
         if ($request->hasFile('profile_photo')) {
             try {
                 $file      = $request->file('profile_photo');
-                $extension = $file->getClientOriginalExtension();
-                $fileName  = 'profile_' . time() . '_' . \Illuminate\Support\Str::random(8) . '.' . $extension;
+                $extension = $file->getClientOriginalExtension() ?: 'jpg';
+                $fileName  = 'profile_' . time() . '_' . Str::random(8) . '.' . $extension;
 
-                $uploadEndpoint = "{$supabaseUrl}/storage/v1/object/barons-images/{$fileName}";
+                $uploadEndpoint = "{$supabaseUrl}/storage/v1/object/member-photos/{$fileName}";
 
                 $uploadResponse = Http::withoutVerifying()->withHeaders([
                     'apikey'        => $supabaseKey,
                     'Authorization' => 'Bearer ' . $supabaseKey,
-                    'Content-Type'  => $file->getMimeType(),
+                    'Content-Type'  => $file->getMimeType() ?: 'image/jpeg',
                     'x-upsert'      => 'true',
                 ])->withBody(
                     file_get_contents($file->getRealPath()), 
-                    $file->getMimeType()
+                    $file->getMimeType() ?: 'image/jpeg'
                 )->post($uploadEndpoint);
 
                 if ($uploadResponse->successful()) {
-                    $profilePhotoUrl = "{$supabaseUrl}/storage/v1/object/public/barons-images/{$fileName}";
+                    $profilePhotoUrl = "{$supabaseUrl}/storage/v1/object/public/member-photos/{$fileName}";
+                } else {
+                    Log::error('Member profile photo upload failed', [
+                        'status' => $uploadResponse->status(),
+                        'body'   => $uploadResponse->body(),
+                    ]);
                 }
             } catch (\Exception $e) {
-                return redirect()->back()->withErrors(['member_error' => 'Photo Upload Failed: ' . $e->getMessage()]);
+                return redirect()->back()->withErrors(['member_error' => 'Photo Upload Failed: ' . $e->getMessage()])->withInput();
             }
         }
 
+        // 2. Prepare payload exactly matching public.members database table columns
         $payload = [
             'class_id'       => !empty($validated['class_id']) ? $validated['class_id'] : null,
             'cadet_role'     => $validated['cadet_role'] ?? 'Members',
@@ -208,6 +216,8 @@ public function index()
             'email'          => strtolower($validated['email']),
             'occupation'     => !empty($validated['occupation']) ? $validated['occupation'] : null,
             'company'        => !empty($validated['company']) ? $validated['company'] : null,
+            'business_name'  => !empty($validated['business_name']) ? $validated['business_name'] : null,
+            'facebook_url'   => !empty($validated['facebook_url']) ? $validated['facebook_url'] : null,
             'profile_photo'  => $profilePhotoUrl,
             'is_public'      => true,
         ];
@@ -225,91 +235,93 @@ public function index()
             }
 
             $errorBody = $response->json();
-            return redirect()->back()->withErrors(['member_error' => 'Supabase Error: ' . ($errorBody['message'] ?? $response->body())]);
+            return redirect()->back()->withErrors([
+                'member_error' => 'Supabase Error: ' . ($errorBody['message'] ?? $response->body())
+            ])->withInput();
 
         } catch (\Exception $e) {
-            return redirect()->back()->withErrors(['member_error' => 'Connection Error: ' . $e->getMessage()]);
+            return redirect()->back()->withErrors(['member_error' => 'Connection Error: ' . $e->getMessage()])->withInput();
         }
     }
 
     public function storeClass(Request $request)
-{
-    $validated = $request->validate([
-        'class_name'      => 'required|string|max:50',
-        'class_number'    => 'nullable|integer|min:1',
-        'batch_year'      => 'nullable|integer',
-        'corps_commander' => 'nullable|string|max:255',
-        'description'     => 'nullable|string',
-        'class_logo'      => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-    ]);
+    {
+        $validated = $request->validate([
+            'class_name'      => 'required|string|max:50',
+            'class_number'    => 'nullable|integer|min:1',
+            'batch_year'      => 'nullable|integer',
+            'corps_commander' => 'nullable|string|max:255',
+            'description'     => 'nullable|string',
+            'class_logo'      => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+        ]);
 
-    $supabaseUrl = config('services.supabase.url', env('SUPABASE_URL'));
-    $supabaseKey = config('services.supabase.anon_key', env('SUPABASE_ANON_KEY'));
+        $supabaseUrl = config('services.supabase.url', env('SUPABASE_URL'));
+        $supabaseKey = config('services.supabase.anon_key', env('SUPABASE_ANON_KEY'));
 
-    if (!$supabaseUrl || !$supabaseKey) {
-        return redirect()->back()->withErrors(['class_error' => 'Supabase URL or API Key is missing.']);
-    }
+        if (!$supabaseUrl || !$supabaseKey) {
+            return redirect()->back()->withErrors(['class_error' => 'Supabase URL or API Key is missing.']);
+        }
 
-    $supabaseUrl = rtrim($supabaseUrl, '/');
-    $classLogoUrl = null;
+        $supabaseUrl = rtrim($supabaseUrl, '/');
+        $classLogoUrl = null;
 
-    if ($request->hasFile('class_logo')) {
+        if ($request->hasFile('class_logo')) {
+            try {
+                $file      = $request->file('class_logo');
+                $extension = $file->getClientOriginalExtension();
+                $fileName  = 'classes/logo_' . time() . '_' . Str::random(8) . '.' . $extension;
+
+                $uploadEndpoint = "{$supabaseUrl}/storage/v1/object/barons-images/{$fileName}";
+
+                $uploadResponse = Http::withoutVerifying()->withHeaders([
+                    'apikey'        => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Content-Type'  => $file->getMimeType(),
+                    'x-upsert'      => 'true',
+                ])->withBody(
+                    file_get_contents($file->getRealPath()),
+                    $file->getMimeType()
+                )->post($uploadEndpoint);
+
+                if ($uploadResponse->successful()) {
+                    $classLogoUrl = "{$supabaseUrl}/storage/v1/object/public/barons-images/{$fileName}";
+                } else {
+                    $errorMsg = $uploadResponse->json()['message'] ?? $uploadResponse->body();
+                    return redirect()->back()->withErrors(['class_error' => 'Logo Upload Failed: ' . $errorMsg]);
+                }
+            } catch (\Exception $e) {
+                return redirect()->back()->withErrors(['class_error' => 'Logo Upload Exception: ' . $e->getMessage()]);
+            }
+        }
+
+        $payload = [
+            'class_name'      => $validated['class_name'],
+            'class_number'    => !empty($validated['class_number']) ? (int) $validated['class_number'] : null,
+            'batch_year'      => !empty($validated['batch_year']) ? (int) $validated['batch_year'] : null,
+            'corps_commander' => !empty($validated['corps_commander']) ? $validated['corps_commander'] : null,
+            'description'     => !empty($validated['description']) ? $validated['description'] : null,
+            'class_logo'      => $classLogoUrl,
+        ];
+
         try {
-            $file      = $request->file('class_logo');
-            $extension = $file->getClientOriginalExtension();
-            $fileName  = 'classes/logo_' . time() . '_' . \Illuminate\Support\Str::random(8) . '.' . $extension;
-
-            $uploadEndpoint = "{$supabaseUrl}/storage/v1/object/barons-images/{$fileName}";
-
-            $uploadResponse = Http::withoutVerifying()->withHeaders([
+            $response = Http::withoutVerifying()->withHeaders([
                 'apikey'        => $supabaseKey,
                 'Authorization' => 'Bearer ' . $supabaseKey,
-                'Content-Type'  => $file->getMimeType(),
-                'x-upsert'      => 'true',
-            ])->withBody(
-                file_get_contents($file->getRealPath()),
-                $file->getMimeType()
-            )->post($uploadEndpoint);
+                'Content-Type'  => 'application/json',
+                'Prefer'        => 'return=minimal',
+            ])->post("{$supabaseUrl}/rest/v1/classes", $payload);
 
-            if ($uploadResponse->successful()) {
-                $classLogoUrl = "{$supabaseUrl}/storage/v1/object/public/barons-images/{$fileName}";
-            } else {
-                $errorMsg = $uploadResponse->json()['message'] ?? $uploadResponse->body();
-                return redirect()->back()->withErrors(['class_error' => 'Logo Upload Failed: ' . $errorMsg]);
+            if ($response->successful()) {
+                return redirect()->back()->with('success', 'New class created successfully.');
             }
+
+            $errorBody = $response->json();
+            $message   = $errorBody['message'] ?? $errorBody['hint'] ?? $response->body();
+
+            return redirect()->back()->withErrors(['class_error' => 'Supabase Error: ' . $message]);
+
         } catch (\Exception $e) {
-            return redirect()->back()->withErrors(['class_error' => 'Logo Upload Exception: ' . $e->getMessage()]);
+            return redirect()->back()->withErrors(['class_error' => 'Connection Exception: ' . $e->getMessage()]);
         }
     }
-
-    $payload = [
-        'class_name'      => $validated['class_name'],
-        'class_number'    => !empty($validated['class_number']) ? (int) $validated['class_number'] : null,
-        'batch_year'      => !empty($validated['batch_year']) ? (int) $validated['batch_year'] : null,
-        'corps_commander' => !empty($validated['corps_commander']) ? $validated['corps_commander'] : null,
-        'description'     => !empty($validated['description']) ? $validated['description'] : null,
-        'class_logo'      => $classLogoUrl,
-    ];
-
-    try {
-        $response = Http::withoutVerifying()->withHeaders([
-            'apikey'        => $supabaseKey,
-            'Authorization' => 'Bearer ' . $supabaseKey,
-            'Content-Type'  => 'application/json',
-            'Prefer'        => 'return=minimal',
-        ])->post("{$supabaseUrl}/rest/v1/classes", $payload);
-
-        if ($response->successful()) {
-            return redirect()->back()->with('success', 'New class created successfully.');
-        }
-
-        $errorBody = $response->json();
-        $message   = $errorBody['message'] ?? $errorBody['hint'] ?? $response->body();
-
-        return redirect()->back()->withErrors(['class_error' => 'Supabase Error: ' . $message]);
-
-    } catch (\Exception $e) {
-        return redirect()->back()->withErrors(['class_error' => 'Connection Exception: ' . $e->getMessage()]);
-    }
-}
 }

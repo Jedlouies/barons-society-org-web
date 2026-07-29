@@ -72,7 +72,7 @@ class BlogController extends Controller
         return view('news-show', compact('article'));
     }
 
-    public function store(Request $request)
+public function store(Request $request)
     {
         $validated = $request->validate([
             'title'          => 'required|string|max:255',
@@ -80,49 +80,52 @@ class BlogController extends Controller
             'content'        => 'required|string',
             'published_date' => 'required|date',
             'featured'       => 'nullable|boolean',
-            'cover_image'    => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
+            'cover_image'    => 'nullable|file|image|mimes:jpeg,png,jpg,webp|max:5120',
         ]);
 
         $supabaseUrl = rtrim(config('services.supabase.url', env('SUPABASE_URL')), '/');
         $supabaseKey = config('services.supabase.anon_key', env('SUPABASE_ANON_KEY'));
 
         if (!$supabaseUrl || !$supabaseKey) {
-            return back()->withErrors(['news_error' => 'Supabase URL or Key is missing in environment settings.']);
+            return back()->withErrors(['news_error' => 'Supabase settings missing.'])->withInput();
         }
 
         $coverImageUrl = null;
 
-        // 1. Upload Cover Image to Supabase Storage ("news-covers" bucket)
         if ($request->hasFile('cover_image')) {
             try {
                 $file = $request->file('cover_image');
-                $extension = $file->getClientOriginalExtension() ?: 'jpg';
+                $extension = 'jpg';
                 $filename = 'news_' . time() . '_' . Str::random(8) . '.' . $extension;
 
                 $storageResponse = Http::withoutVerifying()
                     ->withHeaders([
                         'apikey'        => $supabaseKey,
                         'Authorization' => 'Bearer ' . $supabaseKey,
-                    ])->attach(
-                        'file', 
-                        file_get_contents($file->getRealPath()), 
-                        $filename
-                    )->post("{$supabaseUrl}/storage/v1/object/news-covers/{$filename}");
+                        'Content-Type'  => $file->getMimeType() ?: 'image/jpeg',
+                        'x-upsert'      => 'true',
+                    ])
+                    ->withBody(file_get_contents($file->getRealPath()), $file->getMimeType() ?: 'image/jpeg')
+                    ->post("{$supabaseUrl}/storage/v1/object/barons-images/{$filename}");
 
                 if ($storageResponse->successful()) {
-                    $coverImageUrl = "{$supabaseUrl}/storage/v1/object/public/news-covers/{$filename}";
+                    $coverImageUrl = "{$supabaseUrl}/storage/v1/object/public/barons-images/{$filename}";
                 } else {
-                    Log::warning('Supabase Storage upload failed for news cover', [
+                    Log::error('Supabase Storage upload failed', [
                         'status' => $storageResponse->status(),
                         'body'   => $storageResponse->body(),
                     ]);
+
+                    return back()->withErrors([
+                        'news_error' => 'Failed to upload cover image to Supabase Storage. Ensure the "barons-images" bucket exists and is set to Public.'
+                    ])->withInput();
                 }
             } catch (\Exception $e) {
                 Log::error('Error uploading news cover image: ' . $e->getMessage());
+                return back()->withErrors(['news_error' => 'Image processing failed: ' . $e->getMessage()])->withInput();
             }
         }
 
-        // 2. Insert Record into Supabase `public.news` Table
         $slug = Str::slug($validated['title']) . '-' . Str::random(6);
 
         $payload = [
@@ -149,9 +152,11 @@ class BlogController extends Controller
                 'body'   => $dbResponse->body(),
             ]);
 
-            return back()->withErrors(['news_error' => 'Database insert failed: ' . ($dbResponse->json()['message'] ?? $dbResponse->body())])->withInput();
+            return back()->withErrors([
+                'news_error' => 'Database insert failed: ' . ($dbResponse->json()['message'] ?? $dbResponse->body())
+            ])->withInput();
         }
 
         return redirect()->route('blogs.index')->with('success', 'News article published successfully!');
     }
-}
+    }

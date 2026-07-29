@@ -36,27 +36,22 @@
                 </div>
             </div>
 
-            <!-- Summary -->
             <div class="form-group">
                 <label for="news_summary">Summary / Excerpt</label>
                 <textarea name="summary" id="news_summary" rows="2" placeholder="Brief summary of the news article...">{{ old('summary') }}</textarea>
             </div>
 
-            <!-- Main Content -->
             <div class="form-group">
                 <label for="news_content">Content *</label>
                 <textarea name="content" id="news_content" rows="5" placeholder="Write full article details here..." required>{{ old('content') }}</textarea>
             </div>
 
-            <!-- Cover Image Upload with Crop Preview -->
             <div class="form-group">
                 <label for="news_cover_input">Cover Image (Optional - 16:9 Aspect Ratio)</label>
                 <input type="file" id="news_cover_input" accept="image/jpeg,image/png,image/webp" onchange="previewAndCropNewsImage(event)">
                 
-                <!-- Hidden file input holding cropped blob -->
                 <input type="file" name="cover_image" id="cropped_news_cover" style="display: none;">
 
-                <!-- Crop Preview Container -->
                 <div id="newsCropContainer" style="display: none; margin-top: 12px; max-width: 100%; max-height: 350px;">
                     <img id="newsCropPreview" src="" style="max-width: 100%; display: block;">
                 </div>
@@ -120,45 +115,48 @@
         }
     }
 
+   
     function handleNewsSubmit(e) {
         e.preventDefault();
         const form = e.target;
         const btn = document.getElementById('submitNewsBtn');
         const spinner = document.getElementById('newsBtnSpinner');
-        const btnText = document.getElementById('newsBtnText');
+        const btnText = document.getElementById('btnText');
+
+        const showLoading = () => {
+            if (btn && spinner && btnText) {
+                btn.style.pointerEvents = 'none'; 
+                spinner.style.display = 'inline-block';
+                btnText.textContent = 'Publishing...';
+            }
+        };
 
         if (newsCropper) {
             newsCropper.getCroppedCanvas({
                 width: 1280,
                 height: 720,
             }).toBlob((blob) => {
-                const fileInput = document.getElementById('cropped_news_cover');
+                if (!blob) {
+                    form.submit();
+                    return;
+                }
+
                 const croppedFile = new File([blob], 'cover_image.jpg', { type: 'image/jpeg' });
+                const fileInput = document.getElementById('cropped_news_cover');
 
                 const dataTransfer = new DataTransfer();
                 dataTransfer.items.add(croppedFile);
                 fileInput.files = dataTransfer.files;
 
-                if (btn && spinner && btnText) {
-                    btn.disabled = true;
-                    spinner.style.display = 'inline-block';
-                    btnText.textContent = 'Publishing...';
-                }
+                showLoading();
 
-                form.submit();
+                // Native submit without re-triggering event listener loop
+                HTMLFormElement.prototype.submit.call(form);
             }, 'image/jpeg', 0.85);
         } else {
-            if (btn && spinner && btnText) {
-                btn.disabled = true;
-                spinner.style.display = 'inline-block';
-                btnText.textContent = 'Publishing...';
-            }
-            form.submit();
+            showLoading();
+            HTMLFormElement.prototype.submit.call(form);
         }
     }
 
-    document.addEventListener('click', function(event) {
-        const modal = document.getElementById('newsModal');
-        if (event.target === modal) closeNewsModal();
-    });
 </script>
