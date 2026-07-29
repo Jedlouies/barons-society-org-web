@@ -58,7 +58,7 @@
             <div class="stat-card">
                 <div class="stat-details">
                     <h4>Total Members</h4>
-                    <h2>{{ $totalMembers ?? 500 }}</h2>
+                    <h2>{{ number_format($totalMembers) }}</h2>
                 </div>
                 <div class="stat-icon">
                     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -68,7 +68,7 @@
             <div class="stat-card">
                 <div class="stat-details">
                     <h4>Total Classes</h4>
-                    <h2>{{ $totalClasses ?? 12 }}</h2>
+                    <h2>{{ number_format($totalClasses) }}</h2>
                 </div>
                 <div class="stat-icon">
                     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
@@ -106,10 +106,8 @@
                 <div class="panel">
                     <div class="panel-header">
                         <div class="panel-header-title">
-                            
                             <h3>Official Announcements</h3>
                         </div>
-                       
                     </div>
 
                     <div class="announcements-list">
@@ -126,8 +124,6 @@
 
                                 <h4 class="announcement-title">{{ $announcement->title }}</h4>
                                 <p class="announcement-text">{{ $announcement->content }}</p>
-
-                                
                             </article>
                         @empty
                             <div style="text-align: center; color: #888; padding: 20px 0; font-size: 14px;">
@@ -144,45 +140,29 @@
                     </div>
 
                     <ul class="activity-list">
-                        <li class="activity-item">
-                            <div class="activity-dot"></div>
-                            <div class="activity-details">
-                                <p>Annual Fellowship & 36th Anniversary Celebration successfully organized at 4ID Officer's Clubhouse.</p>
-                                <span>2 days ago • Official Event</span>
-                            </div>
-                        </li>
-
-                        <li class="activity-item">
-                            <div class="activity-dot"></div>
-                            <div class="activity-details">
-                                <p>Added 24 new verified alumni members to Alpha Pioneers Class list.</p>
-                                <span>1 week ago • Membership Update</span>
-                            </div>
-                        </li>
-
-                        <li class="activity-item">
-                            <div class="activity-dot"></div>
-                            <div class="activity-details">
-                                <p>Published Paskong Pinoy Community Outreach Program event report.</p>
-                                <span>2 weeks ago • Outreach</span>
-                            </div>
-                        </li>
-
-                        <li class="activity-item">
-                            <div class="activity-dot"></div>
-                            <div class="activity-details">
-                                <p>Updated corporate bylaws document in accordance with SEC requirements.</p>
-                                <span>3 weeks ago • Governance</span>
-                            </div>
-                        </li>
+                        @forelse ($recentActivities as $activity)
+                            <li class="activity-item">
+                                <div class="activity-dot"></div>
+                                <div class="activity-details">
+                                    <p>{{ $activity->description }}</p>
+                                    <span>{{ $activity->time_ago }} • {{ $activity->type }}</span>
+                                </div>
+                            </li>
+                        @empty
+                            <li class="activity-item">
+                                <div class="activity-details">
+                                    <p style="color: #94a3b8;">No recent major activities recorded yet.</p>
+                                </div>
+                            </li>
+                        @endforelse
                     </ul>
                 </div>
 
             </div>
 
-            <!-- Right Panel: User Status Card & Quick Actions -->
+            <!-- Right Panel Column -->
             <div>
-                <!-- Dynamic Profile Summary Card -->
+                <!-- User Status Card with Actions -->
                 <div class="user-profile-card">
                     <span class="user-badge">{{ $memberPosition ?? 'Active Alumni Member' }}</span>
                     <h3>
@@ -193,6 +173,24 @@
                         @endif
                     </h3>
                     <p>{{ Auth::user()->email ?? 'member@baronssociety.org' }}</p>
+
+                    <div class="profile-actions-container">
+                        <a href="javascript:void(0)" onclick="openUpdateProfileModal()" class="btn-profile-action btn-update-profile">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                            <span>Update Profile Info</span>
+                        </a>
+
+                        <a href="javascript:void(0)" onclick="alert('Password reset link sent to your registered email.')" class="btn-profile-action btn-change-password">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                            </svg>
+                            <span>Change Password</span>
+                        </a>
+                    </div>
                 </div>
 
                 <!-- Quick Actions Panel -->
@@ -209,6 +207,11 @@
 
                         <a href="{{ url('/blogs') }}" class="action-btn">
                             <span>Read Latest News Articles</span>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                        </a>
+
+                        <a href="{{ url('/financial') }}" class="action-btn">
+                            <span>Funds (Society Treasury)</span>
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
                         </a>
 
@@ -260,7 +263,7 @@
 @include('partials.add-announcement-modal')
 @include('partials.add-member-modal')
 @include('partials.add-class-modal')
-
+@include('partials.update-profile-modal')
 @endif
 
 <footer class="footer">

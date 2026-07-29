@@ -30,6 +30,7 @@ Route::middleware(['auth', 'supabase.session'])->group(function () {
     // Financial Routes
     Route::get('/financial', [FinancialController::class, 'index'])->name('financial');
     Route::post('/financial/transaction', [FinancialController::class, 'store'])->name('financial.store');
+    Route::get('/financial/receipt/{id}/download', [FinancialController::class, 'downloadReceipt'])->name('financial.receipt.download');
 
     // Dashboard & Admin Management Routes
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -37,6 +38,7 @@ Route::middleware(['auth', 'supabase.session'])->group(function () {
     Route::post('/announcements', [DashboardController::class, 'storeAnnouncement'])->name('announcements.store');
     Route::post('/members', [DashboardController::class, 'storeMember'])->name('members.store');
     Route::post('/classes', [DashboardController::class, 'storeClass'])->name('classes.store');
+    Route::post('/profile/update', [DashboardController::class, 'updateProfile'])->name('profile.update');
     
     // Auth Routes
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');

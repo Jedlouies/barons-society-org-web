@@ -1192,6 +1192,33 @@ font-weight: 600;
 transition: .3s ease;
 }
 
+.action-btn-change-password {
+display: flex;
+align-items: center;
+justify-content: space-between;
+padding: 14px 18px;
+background: #fafafa;
+border: 1px solid #eaeaea;
+color: #222;
+text-decoration: none;
+border-radius: 12px;
+font-size: 14px;
+font-weight: 600;
+transition: .3s ease;
+}
+
+.action-btn-change-password:hover {
+background: #111;
+color: #fff;
+border-color: #111;
+transform: translateX(4px);
+}
+
+.action-btn-change-password svg {
+color: #d4af37;
+transition: .3s;
+}
+
 .action-btn:hover {
 background: #111;
 color: #fff;
@@ -1206,6 +1233,64 @@ transition: .3s;
 
 .action-btn:hover svg {
 transform: translateX(4px);
+}
+
+/* Profile Card Action Buttons Container */
+.profile-actions-container {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+}
+
+/* Base Profile Action Button Style */
+.btn-profile-action {
+    flex: 1;
+    min-width: 140px;
+    padding: 9px 14px;
+    font-size: 12px;
+    font-weight: 500;
+    text-decoration: none;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s ease-in-out;
+    cursor: pointer;
+}
+
+/* Update Profile Button - Dark Theme */
+.btn-update-profile {
+    background-color: #d4af37;
+    color: #1e293b;
+    border: 1px solid #0f172a;
+}
+
+.btn-update-profile:hover {
+    background-color: #1e293b;
+    border-color: #1e293b;
+    color: #d4af37; /* Accent gold hover */
+    transform: translateY(-1px);
+}
+
+/* Change Password Button - Light/Bordered Theme */
+.btn-change-password {
+    background-color: #ffffff;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+}
+
+.btn-change-password:hover {
+    background-color: #f8fafc;
+    border-color: #94a3b8;
+    color: #0f172a;
+    transform: translateY(-1px);
+}
+
+/* Active Click Effect */
+.btn-profile-action:active {
+    transform: translateY(0);
 }
 
 /* STREAMING_CHUNK:Styling Financial Overview Cards & Summary Panels... */

@@ -5,13 +5,11 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Carbon\Carbon;
 
 class FinancialController extends Controller
 {
-    /**
-     * Category metadata dictionary.
-     */
     private static function categoryMeta(): array
     {
         return [
@@ -33,18 +31,56 @@ class FinancialController extends Controller
         ];
     }
 
-    /**
-     * Display the financial dashboard by fetching directly from Supabase REST API.
-     */
     public function index(Request $request)
     {
         $supabaseUrl = env('SUPABASE_URL');
         $supabaseKey = env('SUPABASE_KEY', env('SUPABASE_ANON_KEY'));
 
-        // 1. Fetch all raw entries for building available years list
+        $memberPosition = 'Active Alumni Member';
+        $currentMemberId = null;
+
+        if (auth()->check() && auth()->user()->email && $supabaseUrl && $supabaseKey) {
+            try {
+                $userEmail = strtolower(trim(auth()->user()->email));
+                $memberResponse = Http::withoutVerifying()->withHeaders([
+                    'apikey'        => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                ])->get(rtrim($supabaseUrl, '/') . "/rest/v1/members", [
+                    'select' => 'id,position',
+                    'email'  => 'eq.' . $userEmail,
+                    'limit'  => 1,
+                ]);
+
+                if ($memberResponse->successful() && !empty($memberResponse->json())) {
+                    $m = $memberResponse->json()[0];
+                    if (!empty($m['position'])) {
+                        $memberPosition = $m['position'];
+                    }
+                    $currentMemberId = $m['id'] ?? null;
+                }
+            } catch (\Exception $e) {}
+        }
+
+        // Fetch members list for selection dropdown
+        $members = collect();
+        if ($supabaseUrl && $supabaseKey) {
+            try {
+                $mResp = Http::withoutVerifying()->withHeaders([
+                    'apikey'        => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                ])->get(rtrim($supabaseUrl, '/') . "/rest/v1/members", [
+                    'select' => 'id,first_name,last_name,nickname,email',
+                    'order'  => 'first_name.asc',
+                ]);
+
+                if ($mResp->successful()) {
+                    $members = collect($mResp->json());
+                }
+            } catch (\Exception $e) {}
+        }
+
         $allRawTransactions = $this->fetchAllFromSupabaseApi($supabaseUrl, $supabaseKey);
 
-        // Calculate available years dynamically from database records
         $availableYears = $allRawTransactions->map(function ($item) {
             return !empty($item->transaction_date) ? Carbon::parse($item->transaction_date)->format('Y') : null;
         })->filter()->unique()->sortDesc()->values()->all();
@@ -53,11 +89,8 @@ class FinancialController extends Controller
             $availableYears = range(date('Y'), date('Y') - 5);
         }
 
-        // 2. Filter dataset across stat-cards, breakdown, and ledger table
         $filteredBaseTransactions = $allRawTransactions->filter(function ($item) use ($request) {
-            if (empty($item->transaction_date)) {
-                return true;
-            }
+            if (empty($item->transaction_date)) return true;
 
             $txDate = Carbon::parse($item->transaction_date)->format('Y-m-d');
             $txYear = Carbon::parse($item->transaction_date)->format('Y');
@@ -73,7 +106,6 @@ class FinancialController extends Controller
             return true;
         });
 
-        // 3. Stat Cards - Calculated from selected year/date period
         $totalInflow = $filteredBaseTransactions->where('flow_type', 'INCOME')->sum('amount');
         $totalOutflow = $filteredBaseTransactions->where('flow_type', 'EXPENSE')->sum('amount');
         $netCash = $totalInflow - $totalOutflow;
@@ -81,7 +113,6 @@ class FinancialController extends Controller
             ->where('category', 'dues')
             ->sum('amount');
 
-        // 4. Inflow / Outflow Breakdown
         $inflowCategories = ['dues', 'donation', 'project-inc', 'fundraising', 'merch'];
         $outflowCategories = ['burial', 'school', 'project-exp', 'event', 'wedding', 'meeting', 'misc'];
         $categoryMeta = self::categoryMeta();
@@ -91,9 +122,7 @@ class FinancialController extends Controller
             $amount = $filteredBaseTransactions->where('flow_type', 'INCOME')
                 ->where('category', $catKey)
                 ->sum('amount');
-            
             $percentage = $totalInflow > 0 ? round(($amount / $totalInflow) * 100, 1) : 0;
-            
             $inflowBreakdown[] = [
                 'key'        => $catKey,
                 'label'      => $categoryMeta[$catKey]['label'] ?? $catKey,
@@ -108,9 +137,7 @@ class FinancialController extends Controller
             $amount = $filteredBaseTransactions->where('flow_type', 'EXPENSE')
                 ->where('category', $catKey)
                 ->sum('amount');
-
             $percentage = $totalOutflow > 0 ? round(($amount / $totalOutflow) * 100, 1) : 0;
-
             $outflowBreakdown[] = [
                 'key'        => $catKey,
                 'label'      => $categoryMeta[$catKey]['label'] ?? $catKey,
@@ -120,7 +147,6 @@ class FinancialController extends Controller
             ];
         }
 
-        // 5. Fetch filtered Ledger Table transactions from Supabase REST API
         $transactions = $this->fetchFromSupabaseApi($request, $supabaseUrl, $supabaseKey);
 
         return view('financial', compact(
@@ -132,76 +158,413 @@ class FinancialController extends Controller
             'inflowBreakdown',
             'outflowBreakdown',
             'categoryMeta',
-            'availableYears'
+            'availableYears',
+            'memberPosition',
+            'members',
+            'currentMemberId'
         ));
     }
 
-    /**
-     * Store new entry in Supabase via REST API.
-     */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'title'            => 'required|string|max:255',
-            'description'      => 'nullable|string',
-            'flow_type'        => 'required|in:INCOME,EXPENSE',
-            'category'         => 'required|string|max:50',
-            'amount'           => 'required|numeric|min:0.01',
-            'payee_or_source'  => 'required|string|max:255',
-            'transaction_date' => 'required|date',
-        ]);
-
-        $validated['recorded_by'] = auth()->user()->name ?? 'Treasury Officer';
-
         $supabaseUrl = env('SUPABASE_URL');
         $supabaseKey = env('SUPABASE_KEY', env('SUPABASE_ANON_KEY'));
+        $userEmail   = strtolower(trim(auth()->user()->email ?? ''));
 
-        Http::withHeaders([
+        $position = '';
+
+        if ($userEmail && $supabaseUrl && $supabaseKey) {
+            $memberResponse = Http::withoutVerifying()->withHeaders([
+                'apikey'        => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+            ])->get(rtrim($supabaseUrl, '/') . "/rest/v1/members", [
+                'select' => 'position',
+                'email'  => 'eq.' . $userEmail,
+                'limit'  => 1,
+            ]);
+
+            if ($memberResponse->successful() && !empty($memberResponse->json())) {
+                $position = $memberResponse->json()[0]['position'] ?? '';
+            }
+        }
+
+        $posLower = strtolower($position);
+        $isAuthorized = str_contains($posLower, 'treasurer') 
+                     || str_contains($posLower, 'auditor') 
+                     || str_contains($posLower, 'admin');
+
+        if (!$isAuthorized) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized position.'], 403);
+            }
+            return redirect()->route('financial')->withErrors(['unauthorized' => 'Unauthorized action.']);
+        }
+
+        $validated = $request->validate([
+            'title'                => 'required|string|max:255',
+            'description'          => 'nullable|string',
+            'flow_type'            => 'required|in:INCOME,EXPENSE',
+            'category'             => 'required|string|max:50',
+            'amount'               => 'nullable|numeric|min:0.01',
+            'payee_or_source'      => 'required|string|max:255',
+            'transaction_date'     => 'required|date',
+            'member_id'            => 'nullable|uuid',
+            'invoice_number'       => 'nullable|string|max:100',
+            'receipt_image_file'   => 'nullable|array',
+            'receipt_image_file.*' => 'image|mimes:jpeg,png,jpg,webp|max:5120',
+            'item_names'           => 'nullable|array',
+            'item_names.*'         => 'nullable|string|max:255',
+            'item_amounts'         => 'nullable|array',
+            'item_amounts.*'       => 'nullable|numeric|min:0',
+        ]);
+
+        // Process line items & auto-calculate total if items are provided
+        $itemsList = [];
+        $calculatedTotal = 0;
+
+        if (!empty($validated['item_names']) && !empty($validated['item_amounts'])) {
+            foreach ($validated['item_names'] as $index => $itemName) {
+                $itemAmt = floatval($validated['item_amounts'][$index] ?? 0);
+                if (!empty(trim($itemName)) && $itemAmt > 0) {
+                    $itemsList[] = [
+                        'name'   => trim($itemName),
+                        'amount' => $itemAmt,
+                    ];
+                    $calculatedTotal += $itemAmt;
+                }
+            }
+        }
+
+        // Final amount priority: Sum of items if available, else direct amount field
+        $finalAmount = ($calculatedTotal > 0) ? $calculatedTotal : floatval($validated['amount'] ?? 0);
+
+        if ($finalAmount <= 0) {
+            return response()->json(['success' => false, 'message' => 'Total amount must be greater than 0.'], 422);
+        }
+
+        // Generate unique reference number: BS-YYYYMMDD-XXXX
+        $refNum = 'BS-' . Carbon::parse($validated['transaction_date'])->format('Ymd') . '-' . strtoupper(Str::random(4));
+        $validated['reference_number'] = $refNum;
+        $validated['recorded_by'] = auth()->user()->name ?? ($position ?: 'Treasury Officer');
+
+        // Handle multiple receipt images upload
+        $receiptImageUrls = [];
+        if ($request->hasFile('receipt_image_file')) {
+            foreach ($request->file('receipt_image_file') as $file) {
+                try {
+                    $ext       = $file->getClientOriginalExtension() ?: 'jpg';
+                    $fileName  = 'receipts/' . time() . '_' . Str::random(8) . '.' . $ext;
+                    $uploadUrl = rtrim($supabaseUrl, '/') . "/storage/v1/object/barons-images/{$fileName}";
+
+                    $uploadResponse = Http::withoutVerifying()->withHeaders([
+                        'apikey'        => $supabaseKey,
+                        'Authorization' => 'Bearer ' . $supabaseKey,
+                        'Content-Type'  => $file->getMimeType() ?: 'image/jpeg',
+                        'x-upsert'      => 'true',
+                    ])->withBody(file_get_contents($file->getRealPath()), $file->getMimeType() ?: 'image/jpeg')
+                      ->post($uploadUrl);
+
+                    if ($uploadResponse->successful()) {
+                        $receiptImageUrls[] = rtrim($supabaseUrl, '/') . "/storage/v1/object/public/barons-images/{$fileName}";
+                    }
+                } catch (\Exception $e) {}
+            }
+        }
+
+        $payload = [
+            'reference_number' => $validated['reference_number'],
+            'title'            => $validated['title'],
+            'description'      => $validated['description'] ?? null,
+            'flow_type'        => $validated['flow_type'],
+            'category'         => $validated['category'],
+            'amount'           => $finalAmount,
+            'payee_or_source'  => $validated['payee_or_source'],
+            'transaction_date' => $validated['transaction_date'],
+            'recorded_by'      => $validated['recorded_by'],
+            'member_id'        => !empty($validated['member_id']) ? $validated['member_id'] : null,
+            'invoice_number'   => !empty($validated['invoice_number']) ? $validated['invoice_number'] : null,
+            'receipt_image'    => $receiptImageUrls[0] ?? null,
+            'receipt_images'   => $receiptImageUrls,
+            'items'            => $itemsList,
+        ];
+
+        $response = Http::withHeaders([
             'apikey'        => $supabaseKey,
             'Authorization' => 'Bearer ' . $supabaseKey,
             'Content-Type'  => 'application/json',
             'Prefer'        => 'return=representation',
-        ])->post(rtrim($supabaseUrl, '/') . '/rest/v1/treasury_transactions', $validated);
+        ])->post(rtrim($supabaseUrl, '/') . '/rest/v1/treasury_transactions', $payload);
 
-        return redirect()->route('financial')
-            ->with('success', 'Treasury entry successfully recorded in Supabase!');
+        if ($response->successful()) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => "Treasury entry saved! Ref No: {$refNum}",
+                    'reference_number' => $refNum,
+                ]);
+            }
+            return redirect()->route('financial')->with('success', "Entry recorded! Ref No: {$refNum}");
+        }
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => false, 'message' => 'Failed to save entry.'], 500);
+        }
+
+        return redirect()->back()->withErrors(['unauthorized' => 'Failed to store entry.']);
     }
 
-    private function fetchFromSupabaseApi(Request $request, string $url, string $key): Collection
+    public function downloadReceipt($id)
+    {
+        $supabaseUrl = env('SUPABASE_URL');
+        $supabaseKey = env('SUPABASE_KEY', env('SUPABASE_ANON_KEY'));
+
+        if (!auth()->check()) {
+            return abort(401, 'Unauthorized');
+        }
+
+        $userEmail = strtolower(trim(auth()->user()->email ?? ''));
+        $position = '';
+        $currentMemberId = null;
+
+        if ($userEmail && $supabaseUrl && $supabaseKey) {
+            try {
+                $memberResponse = Http::withoutVerifying()->withHeaders([
+                    'apikey'        => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                ])->get(rtrim($supabaseUrl, '/') . "/rest/v1/members", [
+                    'select' => 'id,position',
+                    'email'  => 'eq.' . $userEmail,
+                    'limit'  => 1,
+                ]);
+
+                if ($memberResponse->successful() && !empty($memberResponse->json())) {
+                    $m = $memberResponse->json()[0];
+                    $position = $m['position'] ?? '';
+                    $currentMemberId = $m['id'] ?? null;
+                }
+            } catch (\Exception $e) {}
+        }
+
+        $response = Http::withHeaders([
+            'apikey'        => $supabaseKey,
+            'Authorization' => 'Bearer ' . $supabaseKey,
+        ])->get(rtrim($supabaseUrl, '/') . "/rest/v1/treasury_transactions", [
+            'select' => '*',
+            'id'     => 'eq.' . $id,
+            'limit'  => 1,
+        ]);
+
+        if (!$response->successful() || empty($response->json())) {
+            return abort(404, 'Receipt not found');
+        }
+
+        $tx = (object) $response->json()[0];
+
+        $posLower = strtolower($position);
+        $isTreasuryOfficer = str_contains($posLower, 'treasurer') 
+                          || str_contains($posLower, 'auditor');
+
+        $isOwner = ($currentMemberId && isset($tx->member_id) && $tx->member_id === $currentMemberId) 
+                || (strtolower(trim($tx->payee_or_source ?? '')) === strtolower(trim(auth()->user()->name ?? '')));
+
+        // Expenses are public; Income receipts require Treasury/Auditor/Admin role or Ownership
+        $canAccessReceipt = ($tx->flow_type === 'EXPENSE') || $isTreasuryOfficer || $isOwner;
+
+        if (!$canAccessReceipt) {
+            return abort(403, 'Unauthorized access.');
+        }
+
+        $orgLogo = asset('images/BaronsLogo.png'); 
+        $orgAddress = "Cagayan de Oro City, Misamis Oriental, 9000";
+        $treasurerName = "RICKY BAGUI"; 
+        $treasurerTitle = "BARONS Society Treasurer";
+        $signatureUrl = asset('images/signature.png'); 
+
+        $itemsTableHtml = "";
+        if (!empty($tx->items) && is_array($tx->items) && count($tx->items) > 0) {
+            $itemSectionTitle = ($tx->flow_type === 'INCOME') ? 'Itemized Income Breakdown' : 'Itemized Expense Breakdown';
+            $itemsTableHtml = "
+            <div style='margin-top: 25px;'>
+                <div class='label' style='margin-bottom: 8px;'>{$itemSectionTitle}</div>
+                <table style='width: 100%; border-collapse: collapse; font-size: 13px;'>
+                    <thead>
+                        <tr style='background: #f1f5f9; text-align: left;'>
+                            <th style='padding: 8px 12px; border: 1px solid #cbd5e1;'>Item Description</th>
+                            <th style='padding: 8px 12px; border: 1px solid #cbd5e1; text-align: right;'>Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>";
+            foreach ($tx->items as $item) {
+                $itemObj = (object)$item;
+                $itemsTableHtml .= "
+                        <tr>
+                            <td style='padding: 8px 12px; border: 1px solid #e2e8f0;'>{$itemObj->name}</td>
+                            <td style='padding: 8px 12px; border: 1px solid #e2e8f0; text-align: right; font-weight: 600;'>₱" . number_format($itemObj->amount, 2) . "</td>
+                        </tr>";
+            }
+            $itemsTableHtml .= "
+                    </tbody>
+                </table>
+            </div>";
+        }
+
+        $html = "
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset='utf-8'>
+            <title>Receipt - {$tx->reference_number}</title>
+            <style>
+                body { font-family: 'Helvetica', 'Arial', sans-serif; padding: 40px; color: #0f172a; background: #f8fafc; }
+                .receipt-card { 
+                    border: 2px solid #0f172a; 
+                    padding: 35px; 
+                    border-radius: 12px; 
+                    max-width: 650px; 
+                    margin: 0 auto; 
+                    background: #ffffff;
+                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                }
+                .header { 
+                    display: flex; 
+                    align-items: center; 
+                    gap: 20px; 
+                    border-bottom: 2px solid #e2e8f0; 
+                    padding-bottom: 20px; 
+                }
+                .header-logo { width: 75px; height: 75px; object-fit: contain; }
+                .header-info { flex: 1; }
+                .header-info h2 { margin: 0; font-size: 20px; color: #0f172a; letter-spacing: 0.5px; }
+                .header-info .sub-title { margin: 3px 0 0 0; color: #475569; font-weight: 600; font-size: 13px; text-transform: uppercase; }
+                .header-info .address { margin: 5px 0 0 0; color: #64748b; font-size: 11px; line-height: 1.4; }
+
+                .details-grid { margin-top: 25px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+                .label { font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
+                .value { font-size: 14px; color: #0f172a; font-weight: 600; margin-top: 4px; }
+
+                .amount-box { 
+                    text-align: center; 
+                    margin-top: 25px; 
+                    background: #f8fafc; 
+                    padding: 18px; 
+                    border-radius: 8px; 
+                    border: 1px dashed #cbd5e1; 
+                }
+                .amount { font-size: 28px; font-weight: 800; color: " . ($tx->flow_type === 'INCOME' ? '#16a34a' : '#dc2626') . "; margin-top: 4px; }
+
+                .signature-section { 
+                    margin-top: 35px; 
+                    display: flex; 
+                    justify-content: flex-end; 
+                }
+                .signature-block { width: 220px; text-align: center; }
+                .signature-img-container { height: 50px; display: flex; align-items: flex-end; justify-content: center; }
+                .signature-img { max-height: 50px; width: auto; object-fit: contain; }
+                .signature-line { border-top: 1px solid #0f172a; margin-top: 5px; padding-top: 5px; }
+                .signatory-name { font-weight: bold; font-size: 13px; color: #0f172a; text-transform: uppercase; }
+                .signatory-title { font-size: 11px; color: #64748b; margin-top: 2px; }
+
+                .footer { margin-top: 30px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 15px; }
+            </style>
+        </head>
+        <body>
+            <div class='receipt-card'>
+                <div class='header'>
+                    <img src='{$orgLogo}' alt='Logo' class='header-logo' onerror=\"this.style.display='none'\">
+                    <div class='header-info'>
+                        <h2>BARONS SOCIETY INCORPORATED</h2>
+                        <div class='sub-title'>Official Transaction Receipt</div>
+                        <div class='address'>{$orgAddress}</div>
+                    </div>
+                </div>
+
+                <div class='details-grid'>
+                    <div>
+                        <div class='label'>Reference Number</div>
+                        <div class='value'>" . ($tx->reference_number ?? 'N/A') . "</div>
+                    </div>
+                    <div>
+                        <div class='label'>Transaction Date</div>
+                        <div class='value'>" . Carbon::parse($tx->transaction_date)->format('M d, Y') . "</div>
+                    </div>
+                    <div>
+                        <div class='label'>Title</div>
+                        <div class='value'>{$tx->title}</div>
+                    </div>
+                    <div>
+                        <div class='label'>Category</div>
+                        <div class='value'>" . ucfirst($tx->category) . "</div>
+                    </div>
+                    <div>
+                        <div class='label'>" . ($tx->flow_type === 'INCOME' ? 'Received From' : 'Paid To') . "</div>
+                        <div class='value'>{$tx->payee_or_source}</div>
+                    </div>
+                    <div>
+                        <div class='label'>Invoice Number</div>
+                        <div class='value'>" . ($tx->invoice_number ?? 'N/A') . "</div>
+                    </div>
+                </div>
+
+                {$itemsTableHtml}
+
+                <div class='amount-box'>
+                    <div class='label'>Total Amount</div>
+                    <div class='amount'>₱" . number_format($tx->amount, 2) . "</div>
+                </div>
+
+                <div class='signature-section'>
+                    <div class='signature-block'>
+                        <div class='signature-img-container'>
+                            <img src='{$signatureUrl}' alt='Signature' class='signature-img' onerror=\"this.style.visibility='hidden'\">
+                        </div>
+                        <div class='signature-line'>
+                            <div class='signatory-name'>{$treasurerName}</div>
+                            <div class='signatory-title'>{$treasurerTitle}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class='footer'>
+                    Recorded By: " . ($tx->recorded_by ?? 'Treasury') . " | Printed on " . date('Y-m-d H:i') . "
+                </div>
+            </div>
+
+        </body>
+        </html>";
+
+        return response($html)->header('Content-Type', 'text/html');
+    }
+
+private function fetchFromSupabaseApi(Request $request, string $url, string $key): Collection
     {
         $queryParams = [
             'select' => '*',
             'order'  => 'transaction_date.desc,created_at.desc',
         ];
 
-        // Filter by flow type
         if ($request->filled('flow_type') && in_array($request->flow_type, ['INCOME', 'EXPENSE'])) {
             $queryParams['flow_type'] = 'eq.' . $request->flow_type;
         }
 
-        // Filter by category
         if ($request->filled('category')) {
             $queryParams['category'] = 'eq.' . $request->category;
         }
 
-        // Apply Date Range / Year filters directly to Supabase API call
         if ($request->filled('start_date') && $request->filled('end_date')) {
             $queryParams['transaction_date'] = 'gte.' . $request->start_date;
             $queryParams['and'] = '(transaction_date.lte.' . $request->end_date . ')';
         } elseif ($request->filled('year') && $request->year !== 'all') {
-            $startOfYear = $request->year . '-01-01';
-            $endOfYear = $request->year . '-12-31';
-            $queryParams['transaction_date'] = 'gte.' . $startOfYear;
-            $queryParams['and'] = '(transaction_date.lte.' . $endOfYear . ')';
+            $queryParams['transaction_date'] = 'gte.' . $request->year . '-01-01';
+            $queryParams['and'] = '(transaction_date.lte.' . $request->year . '-12-31)';
         }
 
-        // Search term filter
         if ($request->filled('search')) {
             $term = urlencode(strtolower($request->search));
-            $queryParams['or'] = "(title.ilike.*{$term}*,description.ilike.*{$term}*,payee_or_source.ilike.*{$term}*)";
+            $queryParams['or'] = "(title.ilike.*{$term}*,description.ilike.*{$term}*,payee_or_source.ilike.*{$term}*,reference_number.ilike.*{$term}*)";
         }
 
         $endpoint = rtrim($url, '/') . '/rest/v1/treasury_transactions';
+        
         $response = Http::withHeaders([
             'apikey'        => $key,
             'Authorization' => 'Bearer ' . $key,
@@ -241,4 +604,4 @@ class FinancialController extends Controller
 
         return collect();
     }
-}
+    }
