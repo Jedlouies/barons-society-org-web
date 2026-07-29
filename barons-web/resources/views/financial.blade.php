@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -60,65 +59,15 @@
             </div>
         @endif
 
-        <div class="overview-cards-grid">
-            <div class="fin-summary-card highlight">
-                <span class="card-title">Net Cash Available</span>
-                <div class="card-amount">₱{{ number_format($netCash, 2) }}</div>
-                <div class="card-sub">
-                    <span >↑ Active Society Reserve</span>
-                </div>
-            </div>
+        
 
-            <div class="fin-summary-card">
-                <span class="card-title">Total Funds Collected (Inflow)</span>
-                <div class="card-amount" style="color:#16a34a;">₱{{ number_format($totalInflow, 2) }}</div>
-                <div class="card-sub">
-                    <span>Dues, Donations & Sales</span>
-                </div>
-            </div>
-
-            <div class="fin-summary-card">
-                <span class="card-title">Total Funds Spent (Outflow)</span>
-                <div class="card-amount" style="color:#dc2626;">₱{{ number_format($totalOutflow, 2) }}</div>
-                <div class="card-sub">
-                    <span>Welfare, Events & Misc</span>
-                </div>
-            </div>
-
-            <div class="fin-summary-card">
-                <span class="card-title">Member Monthly Dues Collected</span>
-                <div class="card-amount">₱{{ number_format($monthlyDuesTotal, 2) }}</div>
-                <div class="card-sub">
-                    <span >Active Alumni Contributions</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="filter-control-card" id="breakdown-section">
+                <div class="filter-control-card" id="breakdown-section">
             <form action="{{ route('financial') }}#breakdown-section" method="GET" id="dateFilterForm">
-                @foreach(request()->except(['year', 'start_date', 'end_date', 'page']) as $key => $value)
-                    @if(is_array($value))
-                        @foreach($value as $v)
-                            <input type="hidden" name="{{ $key }}[]" value="{{ $v }}">
-                        @endforeach
-                    @else
-                        <input type="hidden" name="{{ $key }}" value="{{ $value }}">
-                    @endif
+                @foreach(request()->only(['flow_type', 'category', 'search']) as $key => $value)
+                    <input type="hidden" name="{{ $key }}" value="{{ $value }}">
                 @endforeach
 
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 16px;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <div>
-                            <h4 style="font-size: 15px; font-weight: 700; color: #0f172a; margin: 0;">Breakdown Date & Fiscal Year Filter</h4>
-                            <p style="font-size: 12px; color: #64748b; margin: 2px 0 0 0;">Filter percentage distribution of inflow and outflow by custom dates or fiscal years</p>
-                        </div>
-                    </div>
-
-                    
-                </div>
-
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; align-items: end;">
-                    
                     <div>
                         <label for="start_date_input" style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 5px;">Start Date</label>
                         <input type="date" name="start_date" id="start_date_input" value="{{ request('start_date') }}" 
@@ -150,13 +99,62 @@
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
                             Apply Filter
                         </button>
-                        <a href="{{ route('financial') }}#breakdown-section" class="filter-btn-reset">Reset</a>
+                        <a href="{{ route('financial') }}" class="filter-btn-reset">Reset All</a>
                     </div>
                 </div>
-
             </form>
         </div>
+        
+        <div style="margin-bottom: 15px; font-size: 14px; font-weight: 600; color: #475569;">
+            Showing Records For: 
+            <span style="color: #0f172a; font-weight: 700;">
+                @if(request('start_date') && request('end_date'))
+                    {{ \Carbon\Carbon::parse(request('start_date'))->format('M d, Y') }} - {{ \Carbon\Carbon::parse(request('end_date'))->format('M d, Y') }}
+                @elseif(request('year') && request('year') !== 'all')
+                    Fiscal Year {{ request('year') }}
+                @else
+                    All-Time Totals
+                @endif
+            </span>
+        </div>
 
+
+        <div class="overview-cards-grid">
+            <div class="fin-summary-card highlight">
+                <span class="card-title">Net Cash Available</span>
+                <div class="card-amount">₱{{ number_format($netCash, 2) }}</div>
+                <div class="card-sub">
+                    <span>↑ Active Reserve (Period)</span>
+                </div>
+            </div>
+
+            <div class="fin-summary-card">
+                <span class="card-title">Total Funds Collected (Inflow)</span>
+                <div class="card-amount" style="color:#16a34a;">₱{{ number_format($totalInflow, 2) }}</div>
+                <div class="card-sub">
+                    <span>Dues, Donations & Sales</span>
+                </div>
+            </div>
+
+            <div class="fin-summary-card">
+                <span class="card-title">Total Funds Spent (Outflow)</span>
+                <div class="card-amount" style="color:#dc2626;">₱{{ number_format($totalOutflow, 2) }}</div>
+                <div class="card-sub">
+                    <span>Welfare, Events & Misc</span>
+                </div>
+            </div>
+
+            <div class="fin-summary-card">
+                <span class="card-title">Member Monthly Dues Collected</span>
+                <div class="card-amount">₱{{ number_format($monthlyDuesTotal, 2) }}</div>
+                <div class="card-sub">
+                    <span>Active Alumni Contributions</span>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- 2. BREAKDOWN CARDS -->
         <div class="grid-two-columns">
             <div class="panel-card">
                 <h3 class="income-header" style="display: flex; align-items: center;">
@@ -179,9 +177,8 @@
             </div>
 
             <div class="panel-card">
-                <h3 class="expense-header" style="display: flex;  align-items: center;">
+                <h3 class="expense-header" style="display: flex; align-items: center;">
                     <span>Outflow Breakdown (Where Funds Go)</span>
-                   
                 </h3>
 
                 @forelse($outflowBreakdown as $item)
@@ -200,6 +197,7 @@
             </div>
         </div>
 
+        <!-- 3. LEDGER TABLE SECTION -->
         <div class="project-panel" id="ledger-section">
             <div class="panel-header">
                 <div class="panel-title-box">
@@ -208,19 +206,38 @@
                 </div>
 
                 <form action="{{ route('financial') }}#ledger-section" method="GET" class="search-box-wrap">
+                    @foreach(request()->only(['year', 'start_date', 'end_date', 'flow_type', 'category']) as $key => $value)
+                        <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                    @endforeach
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="Search donor, item, title..." onchange="this.form.submit()">
                 </form>
             </div>
 
+            <!-- Tab buttons preserving year & date inputs -->
+            @php
+                $filterParams = request()->only(['year', 'start_date', 'end_date', 'search']);
+            @endphp
+
             <div class="view-toggle-bar">
                 <div class="category-tabs">
-                    <a href="{{ route('financial') }}#ledger-section" class="tab-btn {{ !request('flow_type') && !request('category') ? 'active' : '' }}">All Entries</a>
-                    <a href="{{ route('financial', ['flow_type' => 'INCOME']) }}#ledger-section" class="tab-btn {{ request('flow_type') === 'INCOME' ? 'active' : '' }}">Funds In (Income)</a>
-                    <a href="{{ route('financial', ['flow_type' => 'EXPENSE']) }}#ledger-section" class="tab-btn {{ request('flow_type') === 'EXPENSE' ? 'active' : '' }}">Funds Out (Expenses)</a>
-                    <a href="{{ route('financial', ['category' => 'dues']) }}#ledger-section" class="tab-btn {{ request('category') === 'dues' ? 'active' : '' }}">Member Dues</a>
-                    <a href="{{ route('financial', ['category' => 'burial']) }}#ledger-section" class="tab-btn {{ request('category') === 'burial' ? 'active' : '' }}">Burial Aid</a>
-                    <a href="{{ route('financial', ['category' => 'school']) }}#ledger-section" class="tab-btn {{ request('category') === 'school' ? 'active' : '' }}">School Donation</a>
+                    <a href="{{ route('financial', array_merge($filterParams, [])) }}#ledger-section" 
+                       class="tab-btn {{ !request('flow_type') && !request('category') ? 'active' : '' }}">All Entries</a>
+                    
+                    <a href="{{ route('financial', array_merge($filterParams, ['flow_type' => 'INCOME'])) }}#ledger-section" 
+                       class="tab-btn {{ request('flow_type') === 'INCOME' ? 'active' : '' }}">Funds In (Income)</a>
+                    
+                    <a href="{{ route('financial', array_merge($filterParams, ['flow_type' => 'EXPENSE'])) }}#ledger-section" 
+                       class="tab-btn {{ request('flow_type') === 'EXPENSE' ? 'active' : '' }}">Funds Out (Expenses)</a>
+                    
+                    <a href="{{ route('financial', array_merge($filterParams, ['category' => 'dues'])) }}#ledger-section" 
+                       class="tab-btn {{ request('category') === 'dues' ? 'active' : '' }}">Member Dues</a>
+                    
+                    <a href="{{ route('financial', array_merge($filterParams, ['category' => 'burial'])) }}#ledger-section" 
+                       class="tab-btn {{ request('category') === 'burial' ? 'active' : '' }}">Burial Aid</a>
+                    
+                    <a href="{{ route('financial', array_merge($filterParams, ['category' => 'school'])) }}#ledger-section" 
+                       class="tab-btn {{ request('category') === 'school' ? 'active' : '' }}">School Donation</a>
                 </div>
             </div>
 
@@ -263,7 +280,7 @@
                         @empty
                         <tr>
                             <td colspan="7" style="text-align: center; padding: 30px; color: #94a3b8;">
-                                No financial transactions found in Supabase database.
+                                No financial transactions found for the selected period.
                             </td>
                         </tr>
                         @endforelse
@@ -275,6 +292,7 @@
     </div>
 </section>
 
+<!-- MODAL ENTRY FORM -->
 <div class="modal-backdrop" id="entryModal">
     <div class="modal-box">
         <div class="modal-header">
@@ -356,7 +374,6 @@
 </footer>
 
 <script>
-
 const incomeCategories = [
     { code: 'dues', name: 'Monthly Dues' },
     { code: 'donation', name: 'Donations' },
@@ -398,37 +415,12 @@ function updateModalCategories() {
     });
 }
 
-// Date & Year Filter Helpers
 function clearCustomDatesAndSubmit() {
     document.getElementById('start_date_input').value = '';
     document.getElementById('end_date_input').value = '';
     document.getElementById('dateFilterForm').submit();
 }
 
-function applyYearPreset(year) {
-    document.getElementById('start_date_input').value = '';
-    document.getElementById('end_date_input').value = '';
-    document.getElementById('breakdown_year_select').value = year;
-    document.getElementById('dateFilterForm').submit();
-}
-
-function applyQuickPreset(type) {
-    if (type === 'all') {
-        document.getElementById('start_date_input').value = '';
-        document.getElementById('end_date_input').value = '';
-        document.getElementById('breakdown_year_select').value = 'all';
-        document.getElementById('dateFilterForm').submit();
-    }
-}
-
-function applyDateRangePreset(start, end) {
-    document.getElementById('start_date_input').value = start;
-    document.getElementById('end_date_input').value = end;
-    document.getElementById('breakdown_year_select').value = 'all';
-    document.getElementById('dateFilterForm').submit();
-}
-
-// Automatically keep user scrolled at the breakdown or ledger section when applying filters
 document.addEventListener("DOMContentLoaded", function() {
     const searchParams = new URLSearchParams(window.location.search);
     if (window.location.hash === "#breakdown-section" || searchParams.has('year') || searchParams.has('start_date') || searchParams.has('end_date')) {

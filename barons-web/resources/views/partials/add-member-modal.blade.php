@@ -1,8 +1,6 @@
-<!-- Include Cropper.js Styles and Script in your layout or partial head -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 
-<!-- Add Member Modal Partial -->
 <div class="modal-backdrop @if($errors->has('member_error')) active @endif" id="memberModal">
     <div class="modal-box" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
         <div class="modal-header">
@@ -19,7 +17,6 @@
         <form id="memberForm" action="{{ route('members.store') }}" method="POST" enctype="multipart/form-data" onsubmit="handleMemberSubmit(event)">
             @csrf
             
-            <!-- Class Selection Dropdown & Cadet Role Hierarchy -->
             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
                 <div class="form-group">
                     <label for="member_class_id">Select Class / Batch *</label>

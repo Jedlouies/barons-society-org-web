@@ -41,19 +41,20 @@ class FinancialController extends Controller
         $supabaseUrl = env('SUPABASE_URL');
         $supabaseKey = env('SUPABASE_KEY', env('SUPABASE_ANON_KEY'));
 
-        $transactions = $this->fetchFromSupabaseApi($request, $supabaseUrl, $supabaseKey);
-        $allTransactions = $this->fetchAllFromSupabaseApi($supabaseUrl, $supabaseKey);
+        // 1. Fetch all raw entries for building available years list
+        $allRawTransactions = $this->fetchAllFromSupabaseApi($supabaseUrl, $supabaseKey);
 
-        // All-Time Top Card Summary Totals
-        $totalInflow = $allTransactions->where('flow_type', 'INCOME')->sum('amount');
-        $totalOutflow = $allTransactions->where('flow_type', 'EXPENSE')->sum('amount');
-        $netCash = $totalInflow - $totalOutflow;
-        $monthlyDuesTotal = $allTransactions->where('flow_type', 'INCOME')
-            ->where('category', 'dues')
-            ->sum('amount');
+        // Calculate available years dynamically from database records
+        $availableYears = $allRawTransactions->map(function ($item) {
+            return !empty($item->transaction_date) ? Carbon::parse($item->transaction_date)->format('Y') : null;
+        })->filter()->unique()->sortDesc()->values()->all();
 
-        // Dynamic Filtering for Breakdown Cards based on request inputs
-        $breakdownTransactions = $allTransactions->filter(function ($item) use ($request) {
+        if (empty($availableYears)) {
+            $availableYears = range(date('Y'), date('Y') - 5);
+        }
+
+        // 2. Filter dataset across stat-cards, breakdown, and ledger table
+        $filteredBaseTransactions = $allRawTransactions->filter(function ($item) use ($request) {
             if (empty($item->transaction_date)) {
                 return true;
             }
@@ -72,22 +73,26 @@ class FinancialController extends Controller
             return true;
         });
 
-        $periodInflowTotal = $breakdownTransactions->where('flow_type', 'INCOME')->sum('amount');
-        $periodOutflowTotal = $breakdownTransactions->where('flow_type', 'EXPENSE')->sum('amount');
+        // 3. Stat Cards - Calculated from selected year/date period
+        $totalInflow = $filteredBaseTransactions->where('flow_type', 'INCOME')->sum('amount');
+        $totalOutflow = $filteredBaseTransactions->where('flow_type', 'EXPENSE')->sum('amount');
+        $netCash = $totalInflow - $totalOutflow;
+        $monthlyDuesTotal = $filteredBaseTransactions->where('flow_type', 'INCOME')
+            ->where('category', 'dues')
+            ->sum('amount');
 
+        // 4. Inflow / Outflow Breakdown
         $inflowCategories = ['dues', 'donation', 'project-inc', 'fundraising', 'merch'];
         $outflowCategories = ['burial', 'school', 'project-exp', 'event', 'wedding', 'meeting', 'misc'];
-
         $categoryMeta = self::categoryMeta();
 
-        // Inflow Breakdown
         $inflowBreakdown = [];
         foreach ($inflowCategories as $catKey) {
-            $amount = $breakdownTransactions->where('flow_type', 'INCOME')
+            $amount = $filteredBaseTransactions->where('flow_type', 'INCOME')
                 ->where('category', $catKey)
                 ->sum('amount');
             
-            $percentage = $periodInflowTotal > 0 ? round(($amount / $periodInflowTotal) * 100, 1) : 0;
+            $percentage = $totalInflow > 0 ? round(($amount / $totalInflow) * 100, 1) : 0;
             
             $inflowBreakdown[] = [
                 'key'        => $catKey,
@@ -98,14 +103,13 @@ class FinancialController extends Controller
             ];
         }
 
-        // Outflow Breakdown
         $outflowBreakdown = [];
         foreach ($outflowCategories as $catKey) {
-            $amount = $breakdownTransactions->where('flow_type', 'EXPENSE')
+            $amount = $filteredBaseTransactions->where('flow_type', 'EXPENSE')
                 ->where('category', $catKey)
                 ->sum('amount');
 
-            $percentage = $periodOutflowTotal > 0 ? round(($amount / $periodOutflowTotal) * 100, 1) : 0;
+            $percentage = $totalOutflow > 0 ? round(($amount / $totalOutflow) * 100, 1) : 0;
 
             $outflowBreakdown[] = [
                 'key'        => $catKey,
@@ -116,14 +120,8 @@ class FinancialController extends Controller
             ];
         }
 
-        // Available transaction years from Supabase
-        $availableYears = $allTransactions->map(function ($item) {
-            return !empty($item->transaction_date) ? Carbon::parse($item->transaction_date)->format('Y') : null;
-        })->filter()->unique()->sortDesc()->values()->all();
-
-        if (empty($availableYears)) {
-            $availableYears = range(date('Y'), date('Y') - 5);
-        }
+        // 5. Fetch filtered Ledger Table transactions from Supabase REST API
+        $transactions = $this->fetchFromSupabaseApi($request, $supabaseUrl, $supabaseKey);
 
         return view('financial', compact(
             'transactions',
@@ -176,14 +174,28 @@ class FinancialController extends Controller
             'order'  => 'transaction_date.desc,created_at.desc',
         ];
 
+        // Filter by flow type
         if ($request->filled('flow_type') && in_array($request->flow_type, ['INCOME', 'EXPENSE'])) {
             $queryParams['flow_type'] = 'eq.' . $request->flow_type;
         }
 
+        // Filter by category
         if ($request->filled('category')) {
             $queryParams['category'] = 'eq.' . $request->category;
         }
 
+        // Apply Date Range / Year filters directly to Supabase API call
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $queryParams['transaction_date'] = 'gte.' . $request->start_date;
+            $queryParams['and'] = '(transaction_date.lte.' . $request->end_date . ')';
+        } elseif ($request->filled('year') && $request->year !== 'all') {
+            $startOfYear = $request->year . '-01-01';
+            $endOfYear = $request->year . '-12-31';
+            $queryParams['transaction_date'] = 'gte.' . $startOfYear;
+            $queryParams['and'] = '(transaction_date.lte.' . $endOfYear . ')';
+        }
+
+        // Search term filter
         if ($request->filled('search')) {
             $term = urlencode(strtolower($request->search));
             $queryParams['or'] = "(title.ilike.*{$term}*,description.ilike.*{$term}*,payee_or_source.ilike.*{$term}*)";

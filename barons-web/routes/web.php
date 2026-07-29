@@ -32,6 +32,7 @@ Route::middleware(['auth', 'supabase.session'])->group(function () {
     Route::post('/announcements', [DashboardController::class, 'storeAnnouncement'])->name('announcements.store');
     Route::post('/members', [DashboardController::class, 'storeMember'])->name('members.store');
     Route::post('/classes', [DashboardController::class, 'storeClass'])->name('classes.store');
+    Route::post('/news', [BlogController::class, 'store'])->name('')
     
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
     Route::get('/logout', [LoginController::class, 'logout']);

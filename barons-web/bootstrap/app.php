@@ -25,5 +25,5 @@ return Application::configure(basePath: dirname(__DIR__))
             return redirect()->route('login')->withErrors([
                 'email' => 'Your session expired due to inactivity. Please log in again.',
             ]);
-        });
+        }); 
     })->create();

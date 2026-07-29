@@ -225,7 +225,6 @@
     </div>
 </section>
 
-<!-- Floating Action Button (Visible Only to Admins) -->
 @if(in_array(strtolower($memberPosition ?? ''), ['admin', 'administrator']))
 <div class="fab-container">
     <button class="fab-btn" id="fabToggle" type="button" aria-label="Add New Item">
@@ -236,7 +235,7 @@
     </button>
 
     <div class="fab-dropdown" id="fabMenu">
-        <a href="{{ url('/blogs/create') }}" class="fab-item">
+        <a href="javascript:void(0)" class="fab-item" onclick="openNewsModal()">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1m2 13a2 2 0 0 1-2-2V7m2 13a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2m-4-3H9M9 12h6m-6 4h4"/></svg>
             <span>Add News and Updates</span>
         </a>
@@ -250,7 +249,6 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
             <span>Add New Class</span>
         </a>
-        <!-- Triggers modal via JS -->
         <a href="javascript:void(0)" class="fab-item" onclick="openAnnouncementModal()">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
             <span>Add Announcement</span>
@@ -258,10 +256,11 @@
     </div>
 </div>
 
-<!-- Include Modal Partial -->
+@include('partials.add-news-modal')
 @include('partials.add-announcement-modal')
 @include('partials.add-member-modal')
 @include('partials.add-class-modal')
+
 @endif
 
 <footer class="footer">
