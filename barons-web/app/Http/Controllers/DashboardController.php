@@ -164,14 +164,13 @@ class DashboardController extends Controller
         $supabaseUrl = rtrim($supabaseUrl, '/');
         $profilePhotoUrl = null;
 
-        // 1. Upload Profile Photo to Supabase Storage ("member-photos" bucket)
         if ($request->hasFile('profile_photo')) {
             try {
                 $file      = $request->file('profile_photo');
                 $extension = $file->getClientOriginalExtension() ?: 'jpg';
                 $fileName  = 'profile_' . time() . '_' . Str::random(8) . '.' . $extension;
 
-                $uploadEndpoint = "{$supabaseUrl}/storage/v1/object/member-photos/{$fileName}";
+                $uploadEndpoint = "{$supabaseUrl}/storage/v1/object/barons-images/{$fileName}";
 
                 $uploadResponse = Http::withoutVerifying()->withHeaders([
                     'apikey'        => $supabaseKey,
@@ -184,7 +183,7 @@ class DashboardController extends Controller
                 )->post($uploadEndpoint);
 
                 if ($uploadResponse->successful()) {
-                    $profilePhotoUrl = "{$supabaseUrl}/storage/v1/object/public/member-photos/{$fileName}";
+                    $profilePhotoUrl = "{$supabaseUrl}/storage/v1/object/public/barons-images/{$fileName}";
                 } else {
                     Log::error('Member profile photo upload failed', [
                         'status' => $uploadResponse->status(),
@@ -196,7 +195,6 @@ class DashboardController extends Controller
             }
         }
 
-        // 2. Prepare payload exactly matching public.members database table columns
         $payload = [
             'class_id'       => !empty($validated['class_id']) ? $validated['class_id'] : null,
             'cadet_role'     => $validated['cadet_role'] ?? 'Members',
