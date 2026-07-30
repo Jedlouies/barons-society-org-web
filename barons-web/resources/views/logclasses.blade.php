@@ -276,10 +276,7 @@
                     <div class="class-number">
                         {{ $class['class_name'] }}
                     </div>
-                    <div class="class-name">
-                        
-                        Class {{ $class['class_number'] }}
-                    </div>
+    
                 </div>
 
                 <div class="summary-item">
