@@ -128,7 +128,7 @@
             $posLower = strtolower($memberPosition ?? '');
             $isAuthorizedTreasuryUser = str_contains($posLower, 'treasurer') 
                                      || str_contains($posLower, 'auditor') 
-                                     || str_contains($posLower, 'admin');
+                                     
         @endphp
 
         @if($isAuthorizedTreasuryUser)

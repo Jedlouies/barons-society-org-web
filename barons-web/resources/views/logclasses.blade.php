@@ -366,9 +366,7 @@
                                                     <li><strong>Civil Status:</strong> {{ $officer['civil_status'] }}</li>
                                                 @endif
 
-                                                @if(!empty($officer['birth_date']))
-                                                    <li><strong>Birthdate:</strong> {{ \Carbon\Carbon::parse($officer['birth_date'])->format('M d, Y') }}</li>
-                                                @endif
+                                        
 
                                                 @if(!empty($officer['occupation']))
                                                     <li>
@@ -379,22 +377,8 @@
                                                     </li>
                                                 @endif
 
-                                                @if(!empty($officer['contact_number']))
-                                                    <li><strong>Contact:</strong> {{ $officer['contact_number'] }}</li>
-                                                @endif
+                                              
 
-                                                @php
-                                                    $officerAddress = implode(', ', array_filter([
-                                                        $officer['address'] ?? null,
-                                                        $officer['city'] ?? null,
-                                                        $officer['province'] ?? null,
-                                                        $officer['country'] ?? null
-                                                    ]));
-                                                @endphp
-
-                                                @if(!empty($officerAddress))
-                                                    <li><strong>Address:</strong> {{ $officerAddress }}</li>
-                                                @endif
                                             </ul>
                                         </div>
                                     </div>
@@ -441,9 +425,7 @@
                                             <li><strong>Civil Status:</strong> {{ $member['civil_status'] }}</li>
                                         @endif
 
-                                        @if(!empty($member['birth_date']))
-                                            <li><strong>Birthdate:</strong> {{ \Carbon\Carbon::parse($member['birth_date'])->format('M d, Y') }}</li>
-                                        @endif
+                            
 
                                         @if(!empty($member['occupation']))
                                             <li>
@@ -454,22 +436,11 @@
                                             </li>
                                         @endif
 
-                                        @if(!empty($member['contact_number']))
-                                            <li><strong>Contact:</strong> {{ $member['contact_number'] }}</li>
-                                        @endif
+                                     
 
-                                        @php
-                                            $fullAddress = implode(', ', array_filter([
-                                                $member['address'] ?? null,
-                                                $member['city'] ?? null,
-                                                $member['province'] ?? null,
-                                                $member['country'] ?? null
-                                            ]));
-                                        @endphp
+                                       
 
-                                        @if(!empty($fullAddress))
-                                            <li><strong>Address:</strong> {{ $fullAddress }}</li>
-                                        @endif
+                                       
                                     </ul>
                                 </div>
                             </div>
