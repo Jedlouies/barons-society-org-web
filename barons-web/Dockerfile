@@ -14,8 +14,12 @@ WORKDIR /app
 
 COPY . .
 
+# Remove any stale caches copied from the local repository
+RUN rm -f bootstrap/cache/*.php
+
 RUN composer install --no-dev --no-scripts --optimize-autoloader
 
 EXPOSE 10000
 
-CMD php artisan serve --host=0.0.0.0 --port=${PORT:-10000}
+# Clear & rebuild config cache at runtime using Render's injected env vars, then start the server
+CMD sh -c "php artisan config:clear && php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan serve --host=0.0.0.0 --port=${PORT:-10000}"
