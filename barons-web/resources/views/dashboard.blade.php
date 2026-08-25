@@ -53,6 +53,12 @@
 <section class="dashboard-section">
     <div class="container">
 
+        @if(session('success'))
+            <div class="alert-success" style="margin-bottom: 20px; background-color: #dcfce7; color: #166534; padding: 12px 16px; border-radius: 8px;">
+                ✓ {{ session('success') }}
+            </div>
+        @endif
+
         <!-- Summary Metric Cards -->
         <div class="cards-grid">
             <div class="stat-card">
@@ -164,15 +170,29 @@
             <div>
                 <!-- User Status Card with Actions -->
                 <div class="user-profile-card">
-                    <span class="user-badge">{{ $memberPosition ?? 'Active Alumni Member' }}</span>
-                    <h3>
-                        @if (!empty($memberDetails['first_name']) || !empty($memberDetails['last_name']))
-                            {{ trim(($memberDetails['first_name'] ?? '') . ' ' . ($memberDetails['last_name'] ?? '')) }}
-                        @else
-                            {{ Auth::user()->name ?? 'Barons Member' }}
-                        @endif
-                    </h3>
-                    <p>{{ Auth::user()->email ?? 'member@baronssociety.org' }}</p>
+                    @php
+                        // Resolve Position / Role
+                        $resolvedPosition = $memberPosition ?? session('member_position') ?? $memberDetails['position'] ?? $memberDetails['cadet_role'] ?? 'Active Alumni Member';
+
+                        // Resolve Full Name
+                        $nameParts = array_filter([
+                            $memberDetails['first_name'] ?? null,
+                            $memberDetails['middle_name'] ?? null,
+                            $memberDetails['last_name'] ?? null,
+                            $memberDetails['suffix'] ?? null,
+                        ]);
+                        $fullName = trim(implode(' ', $nameParts));
+                        
+                        $displayName = !empty($fullName) 
+                            ? $fullName 
+                            : ($memberName ?? session('member_name') ?? $memberDetails['nickname'] ?? $memberDetails['name'] ?? session('supabase_user.email') ?? 'Barons Member');
+                        
+                        $displayEmail = $userEmail ?? session('supabase_user.email') ?? $memberDetails['email'] ?? 'member@baronssociety.org';
+                    @endphp
+
+                    <span class="user-badge">{{ $resolvedPosition }}</span>
+                    <h3>{{ $displayName }}</h3>
+                    <p>{{ $displayEmail }}</p>
 
                     <div class="profile-actions-container">
                         <a href="javascript:void(0)" onclick="openUpdateProfileModal()" class="btn-profile-action btn-update-profile">
@@ -183,7 +203,7 @@
                             <span>Update Profile Info</span>
                         </a>
 
-                        <a href="javascript:void(0)" onclick="alert('Password reset link sent to your registered email.')" class="btn-profile-action btn-change-password">
+                        <a href="javascript:void(0)" onclick="alert('Password reset instructions will be sent to {{ $displayEmail }}.')" class="btn-profile-action btn-change-password">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                                 <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
@@ -228,7 +248,12 @@
     </div>
 </section>
 
-@if(in_array(strtolower($memberPosition ?? ''), ['admin', 'administrator']))
+@php
+    $currentRoleLower = strtolower($memberPosition ?? session('member_position', ''));
+    $isAdmin = in_array($currentRoleLower, ['admin', 'administrator']);
+@endphp
+
+@if($isAdmin)
 <div class="fab-container">
     <button class="fab-btn" id="fabToggle" type="button" aria-label="Add New Item">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -263,8 +288,9 @@
 @include('partials.add-announcement-modal')
 @include('partials.add-member-modal')
 @include('partials.add-class-modal')
-@include('partials.update-profile-modal')
 @endif
+
+@include('partials.update-profile-modal')
 
 <footer class="footer">
     <div class="container">

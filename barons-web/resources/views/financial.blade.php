@@ -125,10 +125,10 @@
         @endif
 
         @php
-            $posLower = strtolower($memberPosition ?? '');
+            $posLower = strtolower(session('member_position', $memberPosition ?? ''));
             $isAuthorizedTreasuryUser = str_contains($posLower, 'treasurer') 
                                      || str_contains($posLower, 'auditor') 
-                                     
+                                     || str_contains($posLower, 'admin');
         @endphp
 
         @if($isAuthorizedTreasuryUser)

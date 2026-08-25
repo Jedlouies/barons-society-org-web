@@ -57,7 +57,7 @@
             </div>
         @endif
 
-        <form id="loginForm" method="POST" action="{{ route('login') }}">
+        <form id="loginForm" method="POST" action="{{ route('login.post') }}">
             @csrf
 
             <!-- Email Field -->

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
@@ -36,32 +37,12 @@ class FinancialController extends Controller
         $supabaseUrl = env('SUPABASE_URL');
         $supabaseKey = env('SUPABASE_KEY', env('SUPABASE_ANON_KEY'));
 
-        $memberPosition = 'Active Alumni Member';
-        $currentMemberId = null;
+        // Retrieve position and member details from active session
+        $memberPosition  = Session::get('member_position', 'Member');
+        $memberDetails   = Session::get('member_details', []);
+        $currentMemberId = $memberDetails['id'] ?? null;
 
-        if (auth()->check() && auth()->user()->email && $supabaseUrl && $supabaseKey) {
-            try {
-                $userEmail = strtolower(trim(auth()->user()->email));
-                $memberResponse = Http::withoutVerifying()->withHeaders([
-                    'apikey'        => $supabaseKey,
-                    'Authorization' => 'Bearer ' . $supabaseKey,
-                ])->get(rtrim($supabaseUrl, '/') . "/rest/v1/members", [
-                    'select' => 'id,position',
-                    'email'  => 'eq.' . $userEmail,
-                    'limit'  => 1,
-                ]);
-
-                if ($memberResponse->successful() && !empty($memberResponse->json())) {
-                    $m = $memberResponse->json()[0];
-                    if (!empty($m['position'])) {
-                        $memberPosition = $m['position'];
-                    }
-                    $currentMemberId = $m['id'] ?? null;
-                }
-            } catch (\Exception $e) {}
-        }
-
-        // Fetch members list for selection dropdown
+        // Fetch members list for dropdown
         $members = collect();
         if ($supabaseUrl && $supabaseKey) {
             try {
@@ -169,26 +150,10 @@ class FinancialController extends Controller
     {
         $supabaseUrl = env('SUPABASE_URL');
         $supabaseKey = env('SUPABASE_KEY', env('SUPABASE_ANON_KEY'));
-        $userEmail   = strtolower(trim(auth()->user()->email ?? ''));
 
-        $position = '';
-
-        if ($userEmail && $supabaseUrl && $supabaseKey) {
-            $memberResponse = Http::withoutVerifying()->withHeaders([
-                'apikey'        => $supabaseKey,
-                'Authorization' => 'Bearer ' . $supabaseKey,
-            ])->get(rtrim($supabaseUrl, '/') . "/rest/v1/members", [
-                'select' => 'position',
-                'email'  => 'eq.' . $userEmail,
-                'limit'  => 1,
-            ]);
-
-            if ($memberResponse->successful() && !empty($memberResponse->json())) {
-                $position = $memberResponse->json()[0]['position'] ?? '';
-            }
-        }
-
+        $position = Session::get('member_position', '');
         $posLower = strtolower($position);
+
         $isAuthorized = str_contains($posLower, 'treasurer') 
                      || str_contains($posLower, 'auditor') 
                      || str_contains($posLower, 'admin');
@@ -218,7 +183,6 @@ class FinancialController extends Controller
             'item_amounts.*'       => 'nullable|numeric|min:0',
         ]);
 
-        // Process line items & auto-calculate total if items are provided
         $itemsList = [];
         $calculatedTotal = 0;
 
@@ -235,19 +199,18 @@ class FinancialController extends Controller
             }
         }
 
-        // Final amount priority: Sum of items if available, else direct amount field
         $finalAmount = ($calculatedTotal > 0) ? $calculatedTotal : floatval($validated['amount'] ?? 0);
 
         if ($finalAmount <= 0) {
             return response()->json(['success' => false, 'message' => 'Total amount must be greater than 0.'], 422);
         }
 
-        // Generate unique reference number: BS-YYYYMMDD-XXXX
         $refNum = 'BS-' . Carbon::parse($validated['transaction_date'])->format('Ymd') . '-' . strtoupper(Str::random(4));
         $validated['reference_number'] = $refNum;
-        $validated['recorded_by'] = auth()->user()->name ?? ($position ?: 'Treasury Officer');
+        
+        $sessionUser = Session::get('supabase_user', []);
+        $validated['recorded_by'] = $sessionUser['user_metadata']['name'] ?? $sessionUser['email'] ?? ($position ?: 'Treasury Officer');
 
-        // Handle multiple receipt images upload
         $receiptImageUrls = [];
         if ($request->hasFile('receipt_image_file')) {
             foreach ($request->file('receipt_image_file') as $file) {
@@ -288,7 +251,7 @@ class FinancialController extends Controller
             'items'            => $itemsList,
         ];
 
-        $response = Http::withHeaders([
+        $response = Http::withoutVerifying()->withHeaders([
             'apikey'        => $supabaseKey,
             'Authorization' => 'Bearer ' . $supabaseKey,
             'Content-Type'  => 'application/json',
@@ -318,34 +281,16 @@ class FinancialController extends Controller
         $supabaseUrl = env('SUPABASE_URL');
         $supabaseKey = env('SUPABASE_KEY', env('SUPABASE_ANON_KEY'));
 
-        if (!auth()->check()) {
+        if (!Session::has('supabase_access_token')) {
             return abort(401, 'Unauthorized');
         }
 
-        $userEmail = strtolower(trim(auth()->user()->email ?? ''));
-        $position = '';
-        $currentMemberId = null;
+        $position = Session::get('member_position', '');
+        $memberDetails = Session::get('member_details', []);
+        $currentMemberId = $memberDetails['id'] ?? null;
+        $sessionUser = Session::get('supabase_user', []);
 
-        if ($userEmail && $supabaseUrl && $supabaseKey) {
-            try {
-                $memberResponse = Http::withoutVerifying()->withHeaders([
-                    'apikey'        => $supabaseKey,
-                    'Authorization' => 'Bearer ' . $supabaseKey,
-                ])->get(rtrim($supabaseUrl, '/') . "/rest/v1/members", [
-                    'select' => 'id,position',
-                    'email'  => 'eq.' . $userEmail,
-                    'limit'  => 1,
-                ]);
-
-                if ($memberResponse->successful() && !empty($memberResponse->json())) {
-                    $m = $memberResponse->json()[0];
-                    $position = $m['position'] ?? '';
-                    $currentMemberId = $m['id'] ?? null;
-                }
-            } catch (\Exception $e) {}
-        }
-
-        $response = Http::withHeaders([
+        $response = Http::withoutVerifying()->withHeaders([
             'apikey'        => $supabaseKey,
             'Authorization' => 'Bearer ' . $supabaseKey,
         ])->get(rtrim($supabaseUrl, '/') . "/rest/v1/treasury_transactions", [
@@ -362,12 +307,12 @@ class FinancialController extends Controller
 
         $posLower = strtolower($position);
         $isTreasuryOfficer = str_contains($posLower, 'treasurer') 
-                          || str_contains($posLower, 'auditor');
+                          || str_contains($posLower, 'auditor')
+                          || str_contains($posLower, 'admin');
 
         $isOwner = ($currentMemberId && isset($tx->member_id) && $tx->member_id === $currentMemberId) 
-                || (strtolower(trim($tx->payee_or_source ?? '')) === strtolower(trim(auth()->user()->name ?? '')));
+                || (strtolower(trim($tx->payee_or_source ?? '')) === strtolower(trim($sessionUser['email'] ?? '')));
 
-        // Expenses are public; Income receipts require Treasury/Auditor/Admin role or Ownership
         $canAccessReceipt = ($tx->flow_type === 'EXPENSE') || $isTreasuryOfficer || $isOwner;
 
         if (!$canAccessReceipt) {
@@ -376,7 +321,7 @@ class FinancialController extends Controller
 
         $orgLogo = asset('images/BaronsLogo.png'); 
         $orgAddress = "Cagayan de Oro City, Misamis Oriental, 9000";
-        $treasurerName = "RICKY BAGUI"; 
+        $treasurerName = "LUCRESIA"; 
         $treasurerTitle = "BARONS Society Treasurer";
         $signatureUrl = asset('images/signature.png'); 
 
@@ -528,14 +473,13 @@ class FinancialController extends Controller
                     Recorded By: " . ($tx->recorded_by ?? 'Treasury') . " | Printed on " . date('Y-m-d H:i') . "
                 </div>
             </div>
-
         </body>
         </html>";
 
         return response($html)->header('Content-Type', 'text/html');
     }
 
-private function fetchFromSupabaseApi(Request $request, string $url, string $key): Collection
+    private function fetchFromSupabaseApi(Request $request, string $url, string $key): Collection
     {
         $queryParams = [
             'select' => '*',
@@ -565,7 +509,7 @@ private function fetchFromSupabaseApi(Request $request, string $url, string $key
 
         $endpoint = rtrim($url, '/') . '/rest/v1/treasury_transactions';
         
-        $response = Http::withHeaders([
+        $response = Http::withoutVerifying()->withHeaders([
             'apikey'        => $key,
             'Authorization' => 'Bearer ' . $key,
             'Accept'        => 'application/json',
@@ -590,7 +534,7 @@ private function fetchFromSupabaseApi(Request $request, string $url, string $key
     {
         $endpoint = rtrim($url, '/') . '/rest/v1/treasury_transactions?select=*';
 
-        $response = Http::withHeaders([
+        $response = Http::withoutVerifying()->withHeaders([
             'apikey'        => $key,
             'Authorization' => 'Bearer ' . $key,
             'Accept'        => 'application/json',
@@ -604,4 +548,4 @@ private function fetchFromSupabaseApi(Request $request, string $url, string $key
 
         return collect();
     }
-    }
+}

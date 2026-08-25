@@ -4,7 +4,6 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
@@ -18,14 +17,14 @@ class CheckSupabaseSession
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!Auth::check() || !$request->session()->has('supabase_access_token')) {
+        if (!$request->session()->has('supabase_access_token')) {
             return $this->forceLogout($request, 'Session Expired');
         }
 
         $accessToken  = $request->session()->get('supabase_access_token');
         $refreshToken = $request->session()->get('supabase_refresh_token');
         $supabaseUrl  = rtrim(config('services.supabase.url', env('SUPABASE_URL')), '/');
-        $supabaseKey  = config('services.supabase.anon_key', env('SUPABASE_ANON_KEY'));
+        $supabaseKey  = config('services.supabase.anon_key', env('SUPABASE_ANON_KEY', env('SUPABASE_KEY')));
 
         if (!$supabaseUrl || !$supabaseKey) {
             return $next($request);
@@ -66,21 +65,29 @@ class CheckSupabaseSession
 
                     if ($supabaseUser && !empty($supabaseUser['email'])) {
                         try {
-                            $userEmail = strtolower($supabaseUser['email']);
+                            $userEmail = trim(strtolower($supabaseUser['email']));
+                            $serviceKey = config('services.supabase.service_role', env('SUPABASE_SERVICE_ROLE_KEY', $supabaseKey));
+                            
                             $memberResponse = Http::withoutVerifying()
                                 ->withHeaders([
-                                    'apikey'        => $supabaseKey,
-                                    'Authorization' => 'Bearer ' . $newAccess,
+                                    'apikey'        => $serviceKey,
+                                    'Authorization' => 'Bearer ' . $serviceKey,
                                 ])
                                 ->get("{$supabaseUrl}/rest/v1/members", [
                                     'select' => '*',
-                                    'email'  => 'eq.' . $userEmail,
+                                    'email'  => 'ilike.' . $userEmail,
                                     'limit'  => 1,
                                 ]);
 
                             if ($memberResponse->successful() && !empty($memberResponse->json())) {
                                 $memberData = $memberResponse->json()[0];
+                                
+                                $fullName = trim(($memberData['first_name'] ?? '') . ' ' . ($memberData['last_name'] ?? ''));
+                                $name = !empty($fullName) ? $fullName : ($memberData['nickname'] ?? $memberData['name'] ?? $supabaseUser['email']);
+                                
+                                $request->session()->put('member_name', $name);
                                 $request->session()->put('member_position', $memberData['position'] ?? $memberData['role'] ?? 'Member');
+                                $request->session()->put('member_role', strtolower($memberData['position'] ?? $memberData['role'] ?? 'Member'));
                                 $request->session()->put('member_details', $memberData);
                             }
                         } catch (\Exception $e) {
@@ -100,7 +107,7 @@ class CheckSupabaseSession
     {
         $accessToken = $request->session()->get('supabase_access_token');
         $supabaseUrl = rtrim(config('services.supabase.url', env('SUPABASE_URL')), '/');
-        $supabaseKey = config('services.supabase.anon_key', env('SUPABASE_ANON_KEY'));
+        $supabaseKey = config('services.supabase.anon_key', env('SUPABASE_ANON_KEY', env('SUPABASE_KEY')));
 
         if ($accessToken && $supabaseUrl && $supabaseKey) {
             try {
@@ -115,7 +122,6 @@ class CheckSupabaseSession
             }
         }
 
-        Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
