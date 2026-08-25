@@ -16,6 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'supabase.session' => \App\Http\Middleware\CheckSupabaseSession::class,
         ]);
     })
+    ->withMiddleware(function (Middleware $middleware) {
+        $middleware->trustProxies(at: '*');
+    })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (\Illuminate\Session\TokenMismatchException $e, $request) {
             Auth::logout();
