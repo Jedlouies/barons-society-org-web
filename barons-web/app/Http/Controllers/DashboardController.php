@@ -357,118 +357,132 @@ class DashboardController extends Controller
         return redirect()->back()->withErrors(['error' => 'Failed to publish announcement.']);
     }
 
-    public function storeMember(Request $request)
-    {
-        $validated = $request->validate([
-            'class_id'       => 'nullable|string',
-            'cadet_role'     => 'required|string|max:100',
-            'first_name'     => 'required|string|max:100',
-            'middle_name'    => 'nullable|string|max:100',
-            'last_name'      => 'required|string|max:100',
-            'suffix'         => 'nullable|string|max:20',
-            'nickname'       => 'nullable|string|max:100',
-            'gender'         => 'required|string|max:20',
-            'birth_date'     => 'nullable|date',
-            'civil_status'   => 'required|string|max:50',
-            'address'        => 'required|string',
-            'city'           => 'nullable|string|max:100',
-            'province'       => 'nullable|string|max:100',
-            'country'        => 'nullable|string|max:100',
-            'contact_number' => 'required|string|max:30',
-            'email'          => 'required|email|max:255',
-            'occupation'     => 'required|string|max:255',
-            'company'        => 'nullable|string|max:255',
-            'business_name'  => 'nullable|string|max:255',
-            'facebook_url'   => 'nullable|url|max:500',
-            'profile_photo'  => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
-        ]);
+public function storeMember(Request $request)
+{
+    $validated = $request->validate([
+        // Only 4 required fields
+        'first_name'     => 'required|string|max:100',
+        'last_name'      => 'required|string|max:100',
+        'gender'         => 'required|string|max:20',
+        'occupation'     => 'required|string|max:255',
 
-        $supabaseUrl = config('services.supabase.url', env('SUPABASE_URL'));
-        $apiKey      = config('services.supabase.service_role', env('SUPABASE_SERVICE_ROLE_KEY', config('services.supabase.anon_key', env('SUPABASE_KEY', env('SUPABASE_ANON_KEY')))));
+        // Optional fields
+        'class_id'       => 'nullable|string',
+        'cadet_role'     => 'nullable|string|max:100',
+        'middle_name'    => 'nullable|string|max:100',
+        'suffix'         => 'nullable|string|max:20',
+        'nickname'       => 'nullable|string|max:100',
+        'birth_date'     => 'nullable|date',
+        'civil_status'   => 'nullable|string|max:50',
+        'address'        => 'nullable|string',
+        'city'           => 'nullable|string|max:100',
+        'province'       => 'nullable|string|max:100',
+        'country'        => 'nullable|string|max:100',
+        'contact_number' => 'nullable|string|max:30',
+        'email'          => 'nullable|string|max:255',
+        'company'        => 'nullable|string|max:255',
+        'business_name'  => 'nullable|string|max:255',
+        'facebook_url'   => 'nullable|url|max:500',
+        'profile_photo'  => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
+    ]);
 
-        if (!$supabaseUrl || !$apiKey) {
-            return redirect()->back()->withErrors(['member_error' => 'Supabase configuration missing.'])->withInput();
-        }
+    $supabaseUrl = config('services.supabase.url', env('SUPABASE_URL'));
+    $apiKey      = config('services.supabase.service_role', env('SUPABASE_SERVICE_ROLE_KEY', config('services.supabase.anon_key', env('SUPABASE_KEY', env('SUPABASE_ANON_KEY')))));
 
-        $supabaseUrl = rtrim($supabaseUrl, '/');
-        $profilePhotoUrl = null;
+    if (!$supabaseUrl || !$apiKey) {
+        return redirect()->back()->withErrors(['member_error' => 'Supabase configuration missing.'])->withInput();
+    }
 
-        if ($request->hasFile('profile_photo')) {
-            try {
-                $file      = $request->file('profile_photo');
-                $extension = $file->getClientOriginalExtension() ?: 'jpg';
-                $fileName  = 'profile_' . time() . '_' . Str::random(8) . '.' . $extension;
+    $supabaseUrl = rtrim($supabaseUrl, '/');
+    $profilePhotoUrl = null;
 
-                $uploadEndpoint = "{$supabaseUrl}/storage/v1/object/barons-images/{$fileName}";
-
-                $uploadResponse = Http::withoutVerifying()->withHeaders([
-                    'apikey'        => $apiKey,
-                    'Authorization' => 'Bearer ' . $apiKey,
-                    'Content-Type'  => $file->getMimeType() ?: 'image/jpeg',
-                    'x-upsert'      => 'true',
-                ])->withBody(
-                    file_get_contents($file->getRealPath()), 
-                    $file->getMimeType() ?: 'image/jpeg'
-                )->post($uploadEndpoint);
-
-                if ($uploadResponse->successful()) {
-                    $profilePhotoUrl = "{$supabaseUrl}/storage/v1/object/public/barons-images/{$fileName}";
-                }
-            } catch (\Exception $e) {
-                return redirect()->back()->withErrors(['member_error' => 'Photo Upload Failed: ' . $e->getMessage()])->withInput();
-            }
-        }
-
-        $payload = [
-            'class_id'       => !empty($validated['class_id']) ? $validated['class_id'] : null,
-            'cadet_role'     => $validated['cadet_role'] ?? 'Members',
-            'first_name'     => $validated['first_name'],
-            'middle_name'    => !empty($validated['middle_name']) ? $validated['middle_name'] : null,
-            'last_name'      => $validated['last_name'],
-            'suffix'         => !empty($validated['suffix']) ? $validated['suffix'] : null,
-            'nickname'       => !empty($validated['nickname']) ? $validated['nickname'] : null,
-            'gender'         => $validated['gender'],
-            'birth_date'     => !empty($validated['birth_date']) ? $validated['birth_date'] : null,
-            'civil_status'   => $validated['civil_status'],
-            'address'        => $validated['address'],
-            'city'           => !empty($validated['city']) ? $validated['city'] : null,
-            'province'       => !empty($validated['province']) ? $validated['province'] : null,
-            'country'        => !empty($validated['country']) ? $validated['country'] : 'Philippines',
-            'contact_number' => $validated['contact_number'],
-            'email'          => strtolower(trim($validated['email'])),
-            'occupation'     => $validated['occupation'],
-            'company'        => !empty($validated['company']) ? $validated['company'] : null,
-            'business_name'  => !empty($validated['business_name']) ? $validated['business_name'] : null,
-            'facebook_url'   => !empty($validated['facebook_url']) ? $validated['facebook_url'] : null,
-            'is_public'      => true,
-        ];
-
-        if ($profilePhotoUrl) {
-            $payload['profile_photo'] = $profilePhotoUrl;
-        }
-
+    // Handle photo upload
+    if ($request->hasFile('profile_photo')) {
         try {
-            $response = Http::withoutVerifying()->withHeaders([
+            $file      = $request->file('profile_photo');
+            $extension = $file->getClientOriginalExtension() ?: 'jpg';
+            $fileName  = 'profile_' . time() . '_' . Str::random(8) . '.' . $extension;
+
+            $uploadEndpoint = "{$supabaseUrl}/storage/v1/object/barons-images/{$fileName}";
+
+            $uploadResponse = Http::withoutVerifying()->withHeaders([
                 'apikey'        => $apiKey,
                 'Authorization' => 'Bearer ' . $apiKey,
-                'Content-Type'  => 'application/json',
-                'Prefer'        => 'return=minimal',
-            ])->post("{$supabaseUrl}/rest/v1/members", $payload);
+                'Content-Type'  => $file->getMimeType() ?: 'image/jpeg',
+                'x-upsert'      => 'true',
+            ])->withBody(
+                file_get_contents($file->getRealPath()), 
+                $file->getMimeType() ?: 'image/jpeg'
+            )->post($uploadEndpoint);
 
-            if ($response->successful()) {
-                return redirect()->back()->with('success', 'Member details saved successfully.');
+            if ($uploadResponse->successful()) {
+                $profilePhotoUrl = "{$supabaseUrl}/storage/v1/object/public/barons-images/{$fileName}";
+                // Default profile photo fallback using a clean avatar icon generator
+                
             }
-
-            $errorBody = $response->json();
-            return redirect()->back()->withErrors([
-                'member_error' => 'Supabase Error: ' . ($errorBody['message'] ?? $response->body())
-            ])->withInput();
-
         } catch (\Exception $e) {
-            return redirect()->back()->withErrors(['member_error' => 'Connection Error: ' . $e->getMessage()])->withInput();
+            return redirect()->back()->withErrors(['member_error' => 'Photo Upload Failed: ' . $e->getMessage()])->withInput();
         }
     }
 
+    // Default profile photo fallback if none provided
+    if (!$profilePhotoUrl) {
+                    $avatarName = urlencode(trim($validated['first_name'] . ' ' . $validated['last_name']));
+                    $profilePhotoUrl = "https://ui-avatars.com/api/?name={$avatarName}&background=0f172a&color=d4af37&size=256&bold=true";
+    }
+
+    // Automatic email generation (firstname@barons.org)
+    $cleanFirstName = Str::slug(Str::lower(trim($validated['first_name'])), '');
+    $finalEmail     = !empty($validated['email']) 
+        ? strtolower(trim($validated['email'])) 
+        : "{$cleanFirstName}@barons.org";
+
+    $payload = [
+        'class_id'       => !empty($validated['class_id']) ? $validated['class_id'] : null,
+        'cadet_role'     => !empty($validated['cadet_role']) ? $validated['cadet_role'] : 'Members',
+        'first_name'     => $validated['first_name'],
+        'middle_name'    => !empty($validated['middle_name']) ? $validated['middle_name'] : null,
+        'last_name'      => $validated['last_name'],
+        'suffix'         => !empty($validated['suffix']) ? $validated['suffix'] : null,
+        'nickname'       => !empty($validated['nickname']) ? $validated['nickname'] : null,
+        'gender'         => $validated['gender'],
+        'birth_date'     => !empty($validated['birth_date']) ? $validated['birth_date'] : null,
+        'civil_status'   => !empty($validated['civil_status']) ? $validated['civil_status'] : 'Single',
+        'address'        => !empty($validated['address']) ? $validated['address'] : 'N/A',
+        'city'           => !empty($validated['city']) ? $validated['city'] : null,
+        'province'       => !empty($validated['province']) ? $validated['province'] : null,
+        'country'        => !empty($validated['country']) ? $validated['country'] : 'Philippines',
+        'contact_number' => !empty($validated['contact_number']) ? $validated['contact_number'] : 'N/A',
+        'email'          => $finalEmail,
+        'occupation'     => $validated['occupation'],
+        'company'        => !empty($validated['company']) ? $validated['company'] : null,
+        'business_name'  => !empty($validated['business_name']) ? $validated['business_name'] : null,
+        'facebook_url'   => !empty($validated['facebook_url']) ? $validated['facebook_url'] : null,
+        'profile_photo'  => $profilePhotoUrl,
+        'is_public'      => true,
+    ];
+
+    try {
+        $response = Http::withoutVerifying()->withHeaders([
+            'apikey'        => $apiKey,
+            'Authorization' => 'Bearer ' . $apiKey,
+            'Content-Type'  => 'application/json',
+            'Prefer'        => 'return=minimal',
+        ])->post("{$supabaseUrl}/rest/v1/members", $payload);
+
+        if ($response->successful()) {
+            return redirect()->back()->with('success', 'Member details saved successfully.');
+        }
+
+        $errorBody = $response->json();
+        return redirect()->back()->withErrors([
+            'member_error' => 'Supabase Error: ' . ($errorBody['message'] ?? $response->body())
+        ])->withInput();
+
+    } catch (\Exception $e) {
+        return redirect()->back()->withErrors(['member_error' => 'Connection Error: ' . $e->getMessage()])->withInput();
+    }
+}
     public function storeClass(Request $request)
     {
         $validated = $request->validate([

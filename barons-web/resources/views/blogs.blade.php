@@ -120,14 +120,6 @@ Stay informed with the latest announcements, community outreach, anniversary cel
                         {{ $article['summary'] }}
                     </p>
 
-                    <a
-                        href="{{ route('news.show',$article['slug']) }}"
-                        class="read-btn">
-
-                        Read More
-
-                    </a>
-
                 </div>
 
             </div>

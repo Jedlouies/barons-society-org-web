@@ -331,12 +331,15 @@
                             <div class="officers-grid">
                                 @foreach($officers as $officer)
                                     <div class="member-detail-card officer-card">
+                                        @php
+                                            $officerFullName = trim(($officer['first_name'] ?? '') . ' ' . ($officer['last_name'] ?? ''));
+                                            $defaultOfficerAvatar = 'https://ui-avatars.com/api/?name=' . urlencode($officerFullName ?: 'Officer') . '&background=0f172a&color=d4af37&size=256&bold=true';
+                                        @endphp
+
                                         <div class="member-avatar officer-avatar">
-                                            @if(!empty($officer['profile_photo']))
-                                                <img src="{{ $officer['profile_photo'] }}" alt="{{ $officer['first_name'] }}">
-                                            @else
-                                                <img src="https://placehold.co/100x100/111/d4af37?text={{ strtoupper(substr($officer['first_name'] ?? 'O', 0, 1)) }}" alt="Officer Avatar">
-                                            @endif
+                                            <img src="{{ !empty($officer['profile_photo']) ? $officer['profile_photo'] : $defaultOfficerAvatar }}" 
+                                                alt="{{ $officer['first_name'] ?? 'Officer' }}"
+                                                onerror="this.onerror=null;this.src='{{ $defaultOfficerAvatar }}';">
                                         </div>
 
                                         <div class="member-info">
@@ -388,12 +391,15 @@
                     <div class="member-cards-grid">
                         @forelse($generalMembers as $member)
                             <div class="member-detail-card">
+                                @php
+                                    $memberFullName = trim(($member['first_name'] ?? '') . ' ' . ($member['last_name'] ?? ''));
+                                    $defaultMemberAvatar = 'https://ui-avatars.com/api/?name=' . urlencode($memberFullName ?: 'Member') . '&background=1e293b&color=ffffff&size=256&bold=true';
+                                @endphp
+
                                 <div class="member-avatar">
-                                    @if(!empty($member['profile_photo']))
-                                        <img src="{{ $member['profile_photo'] }}" alt="{{ $member['first_name'] }}">
-                                    @else
-                                        <img src="https://placehold.co/100x100/111/d4af37?text={{ strtoupper(substr($member['first_name'] ?? 'M', 0, 1)) }}" alt="Member Avatar">
-                                    @endif
+                                    <img src="{{ !empty($member['profile_photo']) ? $member['profile_photo'] : $defaultMemberAvatar }}" 
+                                        alt="{{ $member['first_name'] ?? 'Member' }}"
+                                        onerror="this.onerror=null;this.src='{{ $defaultMemberAvatar }}';">
                                 </div>
 
                                 <div class="member-info">
