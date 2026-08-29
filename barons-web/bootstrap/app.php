@@ -15,7 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'supabase.session' => \App\Http\Middleware\CheckSupabaseSession::class,
         ]);
-    })
+    })  
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->trustProxies(at: '*');
     })

@@ -362,10 +362,6 @@
                                                     <li><strong>Gender:</strong> {{ $officer['gender'] }}</li>
                                                 @endif
 
-                                                @if(!empty($officer['civil_status']))
-                                                    <li><strong>Civil Status:</strong> {{ $officer['civil_status'] }}</li>
-                                                @endif
-
                                         
 
                                                 @if(!empty($officer['occupation']))
@@ -419,10 +415,6 @@
                                     <ul class="member-meta-details">
                                         @if(!empty($member['gender']))
                                             <li><strong>Gender:</strong> {{ $member['gender'] }}</li>
-                                        @endif
-
-                                        @if(!empty($member['civil_status']))
-                                            <li><strong>Civil Status:</strong> {{ $member['civil_status'] }}</li>
                                         @endif
 
                             
