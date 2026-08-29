@@ -133,13 +133,47 @@
 
         @if($isAuthorizedTreasuryUser)
             <div style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
-                <button type="button" class="modal-submit-btn" onclick="openTransactionModal()" style="width: auto; padding: 10px 20px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                    <span>Record Entry</span>
-                </button>
+<div style="margin-bottom: 20px; display: flex; justify-content: flex-end; align-items: center; gap: 10px;">
+    <!-- Export Dropdown & Filter Trigger -->
+    <div class="export-dropdown-wrapper" style="position: relative; display: inline-block;">
+        <button type="button" class="export-btn" onclick="toggleExportDropdown(event)" 
+                style="background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; padding: 10px 16px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span>Export Statement</span>
+            <small style="font-size: 10px; margin-left: 2px;">▼</small>
+        </button>
+
+        <div id="exportDropdownMenu" class="export-dropdown-menu" 
+             style="display: none; position: absolute; right: 0; top: 100%; margin-top: 6px; background: #ffffff; width: 240px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; border-radius: 8px; z-index: 120; overflow: hidden; padding: 4px 0;">
+            <a href="{{ route('financial.export') }}" class="export-menu-item" 
+               style="display: block; padding: 10px 14px; font-size: 13px; color: #0f172a; text-decoration: none; font-weight: 500;">
+                📊 Export All Records (Summary & Ledger)
+            </a>
+            <a href="{{ route('financial.export', request()->query()) }}" class="export-menu-item" 
+               style="display: block; padding: 10px 14px; font-size: 13px; color: #0f172a; text-decoration: none; font-weight: 500; border-top: 1px solid #f1f5f9;">
+                🔍 Export Current Screen View
+            </a>
+            <button type="button" onclick="openExportModal()" class="export-menu-item" 
+                    style="width: 100%; text-align: left; background: none; border: none; display: block; padding: 10px 14px; font-size: 13px; color: #2563eb; font-weight: 600; cursor: pointer; border-top: 1px solid #f1f5f9;">
+                ⚙️ Filter by Member / Category / Date...
+            </button>
+        </div>
+    </div>
+
+    @if($isAuthorizedTreasuryUser)
+        <button type="button" class="modal-submit-btn" onclick="openTransactionModal()" style="width: auto; padding: 10px 20px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span>Record Entry</span>
+        </button>
+    @endif
+</div>                
             </div>
         @endif
 
@@ -519,6 +553,76 @@
 </div>
 @endif
 
+<!-- FILTERED EXPORT MODAL -->
+<div class="modal-backdrop" id="exportFilterModal">
+    <div class="modal-box" style="max-width: 480px; position: relative;">
+        <div class="modal-header">
+            <h3>Custom Financial Statement Export</h3>
+            <button type="button" class="close-modal-btn" onclick="closeExportModal()">&times;</button>
+        </div>
+
+        <form action="{{ route('financial.export') }}" method="GET" target="_blank" onsubmit="closeExportModal()">
+            <div class="form-group">
+                <label>Filter by Member / Donor</label>
+                <select name="member_id" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 13px;">
+                    <option value="">-- All Members & Payees --</option>
+                    @foreach($members as $mb)
+                        <option value="{{ $mb['id'] }}">
+                            {{ $mb['first_name'] }} {{ $mb['last_name'] }} ({{ $mb['email'] }})
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Flow Type</label>
+                <select name="flow_type" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 13px;">
+                    <option value="">All Flows (Inflow & Outflow)</option>
+                    <option value="INCOME">Income (Inflow Only)</option>
+                    <option value="EXPENSE">Expense (Outflow Only)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Category</label>
+                <select name="category" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 13px;">
+                    <option value="all">All Categories</option>
+                    <optgroup label="Inflow">
+                        <option value="dues">Monthly Dues</option>
+                        <option value="donation">Donations</option>
+                        <option value="project-inc">Gross Project Income</option>
+                        <option value="fundraising">Fundraising</option>
+                        <option value="merch">Merchandise Sales</option>
+                    </optgroup>
+                    <optgroup label="Outflow">
+                        <option value="wedding">Wedding Assistance</option>
+                        <option value="burial">Burial Aid</option>
+                        <option value="meeting">Meetings & Admin</option>
+                        <option value="school">Donate to School</option>
+                        <option value="event">Events</option>
+                        <option value="project-exp">Project Expenses</option>
+                        <option value="misc">Miscellaneous</option>
+                    </optgroup>
+                </select>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div class="form-group">
+                    <label>Start Date</label>
+                    <input type="date" name="start_date" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px;">
+                </div>
+                <div class="form-group">
+                    <label>End Date</label>
+                    <input type="date" name="end_date" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px;">
+                </div>
+            </div>
+
+            <button type="submit" class="modal-submit-btn" style="margin-top: 15px; width: 100%;">
+                Download Formatted Excel (.xls)
+            </button>
+        </form>
+    </div>
+</div>
 <footer class="footer">
     <div class="container">
         <div class="footer-grid">
@@ -547,6 +651,34 @@
 </footer>
 
 <script>
+
+function toggleExportDropdown(event) {
+    event.stopPropagation();
+    const menu = document.getElementById('exportDropdownMenu');
+    if (menu) {
+        menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+    }
+}
+
+function openExportModal() {
+    const menu = document.getElementById('exportDropdownMenu');
+    if (menu) menu.style.display = 'none';
+    
+    const modal = document.getElementById('exportFilterModal');
+    if (modal) modal.classList.add('active');
+}
+
+function closeExportModal() {
+    const modal = document.getElementById('exportFilterModal');
+    if (modal) modal.classList.remove('active');
+}
+
+document.addEventListener('click', function(e) {
+    const menu = document.getElementById('exportDropdownMenu');
+    if (menu && !e.target.closest('.export-dropdown-wrapper')) {
+        menu.style.display = 'none';
+    }
+});
 const incomeCategories = [
     { code: 'dues', name: 'Monthly Dues' },
     { code: 'donation', name: 'Donations' },

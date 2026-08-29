@@ -548,4 +548,201 @@ class FinancialController extends Controller
 
         return collect();
     }
-}
+
+public function export(Request $request)
+{
+    $supabaseUrl = env('SUPABASE_URL');
+    $supabaseKey = env('SUPABASE_KEY', env('SUPABASE_ANON_KEY'));
+
+    $queryParams = [
+        'select' => '*',
+        'order'  => 'transaction_date.desc,created_at.desc',
+    ];
+
+    // Apply member filter
+    if ($request->filled('member_id')) {
+        $queryParams['member_id'] = 'eq.' . $request->member_id;
+    }
+
+    // Apply flow type filter
+    if ($request->filled('flow_type') && in_array($request->flow_type, ['INCOME', 'EXPENSE'])) {
+        $queryParams['flow_type'] = 'eq.' . $request->flow_type;
+    }
+
+    // Apply category filter
+    if ($request->filled('category') && $request->category !== 'all') {
+        $queryParams['category'] = 'eq.' . $request->category;
+    }
+
+    // Apply date range or year filters
+    $periodLabel = 'All-Time Records';
+    if ($request->filled('start_date') && $request->filled('end_date')) {
+        $queryParams['transaction_date'] = 'gte.' . $request->start_date;
+        $queryParams['and'] = '(transaction_date.lte.' . $request->end_date . ')';
+        $periodLabel = Carbon::parse($request->start_date)->format('M d, Y') . ' to ' . Carbon::parse($request->end_date)->format('M d, Y');
+    } elseif ($request->filled('year') && $request->year !== 'all') {
+        $queryParams['transaction_date'] = 'gte.' . $request->year . '-01-01';
+        $queryParams['and'] = '(transaction_date.lte.' . $request->year . '-12-31)';
+        $periodLabel = 'Fiscal Year ' . $request->year;
+    }
+
+    // Apply search filter
+    if ($request->filled('search')) {
+        $term = urlencode(strtolower($request->search));
+        $queryParams['or'] = "(title.ilike.*{$term}*,description.ilike.*{$term}*,payee_or_source.ilike.*{$term}*,reference_number.ilike.*{$term}*)";
+    }
+
+    $endpoint = rtrim($supabaseUrl, '/') . '/rest/v1/treasury_transactions';
+    $response = Http::withoutVerifying()->withHeaders([
+        'apikey'        => $supabaseKey,
+        'Authorization' => 'Bearer ' . $supabaseKey,
+        'Accept'        => 'application/json',
+    ])->get($endpoint, $queryParams);
+
+    $records = collect($response->successful() ? $response->json() : []);
+    $categoryMeta = self::categoryMeta();
+
+    // Calculate executive summary statistics
+    $totalInflow = $records->where('flow_type', 'INCOME')->sum('amount');
+    $totalOutflow = $records->where('flow_type', 'EXPENSE')->sum('amount');
+    $netBalance = $totalInflow - $totalOutflow;
+    $totalDues = $records->where('flow_type', 'INCOME')->where('category', 'dues')->sum('amount');
+    $totalDonations = $records->where('flow_type', 'INCOME')->where('category', 'donation')->sum('amount');
+    $totalTransactions = $records->count();
+
+    $exportedBy = Session::get('member_position', 'Treasury Department');
+    $generatedAt = Carbon::now()->format('F d, Y h:i A');
+    $fileName = 'Financial_Summary_Statement_' . date('Ymd_His') . '.xls';
+
+    $headers = [
+        'Content-Type'        => 'application/vnd.ms-excel; charset=UTF-8',
+        'Content-Disposition' => "attachment; filename=\"{$fileName}\"",
+        'Pragma'              => 'no-cache',
+        'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+        'Expires'             => '0',
+    ];
+
+    return response()->stream(function () use (
+        $records,
+        $categoryMeta,
+        $totalInflow,
+        $totalOutflow,
+        $netBalance,
+        $totalDues,
+        $totalDonations,
+        $totalTransactions,
+        $periodLabel,
+        $exportedBy,
+        $generatedAt
+    ) {
+        $handle = fopen('php://output', 'w');
+
+        // Render clean HTML-based Excel with custom column widths, styled header blocks, and tables
+        echo '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+        echo '<head><meta charset="UTF-8">';
+        echo '<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Financial Summary</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->';
+        echo '<style>
+            body { font-family: "Segoe UI", Arial, sans-serif; }
+            .org-header { font-size: 18pt; font-weight: bold; color: #0f172a; }
+            .report-title { font-size: 14pt; font-weight: bold; color: #334155; }
+            .meta-info { font-size: 10pt; color: #64748b; }
+            .section-title { font-size: 12pt; font-weight: bold; background-color: #0f172a; color: #ffffff; padding: 6px 10px; }
+            .summary-table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+            .summary-table td, .summary-table th { border: 1px solid #cbd5e1; padding: 8px 12px; font-size: 10pt; }
+            .summary-header { background-color: #f1f5f9; font-weight: bold; color: #1e293b; }
+            .inflow-text { color: #15803d; font-weight: bold; }
+            .outflow-text { color: #b91c1c; font-weight: bold; }
+            .net-text { color: #0369a1; font-weight: bold; font-size: 11pt; }
+            .ledger-table { border-collapse: collapse; width: 100%; }
+            .ledger-table th { background-color: #1e293b; color: #ffffff; font-weight: bold; padding: 8px 10px; border: 1px solid #334155; font-size: 10pt; }
+            .ledger-table td { border: 1px solid #cbd5e1; padding: 6px 10px; font-size: 9.5pt; vertical-align: top; }
+            .total-row td { background-color: #f8fafc; font-weight: bold; border-top: 2px solid #0f172a; font-size: 10.5pt; }
+        </style>';
+        echo '</head><body>';
+
+        // 1. Organization Header Block
+        echo '<table style="width:100%; margin-bottom: 15px;">';
+        echo '<tr><td colspan="10" class="org-header">BARONS SOCIETY INCORPORATED</td></tr>';
+        echo '<tr><td colspan="10" class="report-title">Financial Summary & Itemized Statement</td></tr>';
+        echo '<tr><td colspan="10" class="meta-info">Reporting Period: <b>' . htmlspecialchars($periodLabel) . '</b> | Generated: ' . $generatedAt . ' | Signatory: ' . htmlspecialchars($exportedBy) . '</td></tr>';
+        echo '</table><br/>';
+
+        // 2. Executive Summary Metrics Table
+        echo '<table class="summary-table" style="width: 850px;">';
+        echo '<tr><th colspan="4" class="section-title">EXECUTIVE TREASURY SUMMARY</th></tr>';
+        echo '<tr>';
+        echo '<td class="summary-header" style="width: 220px;">Total Inflow (Collections):</td>';
+        echo '<td class="inflow-text" style="width: 200px;">₱ ' . number_format($totalInflow, 2) . '</td>';
+        echo '<td class="summary-header" style="width: 220px;">Total Outflow (Disbursed):</td>';
+        echo '<td class="outflow-text" style="width: 210px;">₱ ' . number_format($totalOutflow, 2) . '</td>';
+        echo '</tr>';
+        echo '<tr>';
+        echo '<td class="summary-header">Net Available Reserve:</td>';
+        echo '<td class="net-text">₱ ' . number_format($netBalance, 2) . '</td>';
+        echo '<td class="summary-header">Member Dues Collected:</td>';
+        echo '<td class="inflow-text">₱ ' . number_format($totalDues, 2) . '</td>';
+        echo '</tr>';
+        echo '<tr>';
+        echo '<td class="summary-header">Donations Received:</td>';
+        echo '<td class="inflow-text">₱ ' . number_format($totalDonations, 2) . '</td>';
+        echo '<td class="summary-header">Total Ledger Entries:</td>';
+        echo '<td><b>' . $totalTransactions . ' records</b></td>';
+        echo '</tr>';
+        echo '</table><br/>';
+
+        // 3. Itemized Ledger Table with Fixed Column Widths
+        echo '<table class="ledger-table">';
+        echo '<tr><th colspan="10" class="section-title" style="background-color: #334155;">DETAILED TRANSACTION LEDGER</th></tr>';
+        echo '<thead><tr>';
+        echo '<th style="width: 130px; text-align: left;">Ref No.</th>';
+        echo '<th style="width: 95px; text-align: center;">Date</th>';
+        echo '<th style="width: 220px; text-align: left;">Title / Description</th>';
+        echo '<th style="width: 85px; text-align: center;">Flow</th>';
+        echo '<th style="width: 150px; text-align: left;">Category</th>';
+        echo '<th style="width: 180px; text-align: left;">Member / Payee / Source</th>';
+        echo '<th style="width: 120px; text-align: right;">Amount (PHP)</th>';
+        echo '<th style="width: 110px; text-align: left;">Invoice No.</th>';
+        echo '<th style="width: 260px; text-align: left;">Itemized Breakdown</th>';
+        echo '<th style="width: 140px; text-align: left;">Recorded By</th>';
+        echo '</tr></thead><tbody>';
+
+        foreach ($records as $row) {
+            $cat = $row['category'] ?? '';
+            $catLabel = $categoryMeta[$cat]['label'] ?? ucfirst($cat);
+            $isIncome = ($row['flow_type'] ?? '') === 'INCOME';
+
+            $itemsText = '';
+            if (!empty($row['items']) && is_array($row['items'])) {
+                $itemLines = array_map(function ($it) {
+                    return htmlspecialchars($it['name'] ?? '') . ' (₱' . number_format($it['amount'] ?? 0, 2) . ')';
+                }, $row['items']);
+                $itemsText = implode('<br/>', $itemLines);
+            }
+
+            echo '<tr>';
+            echo '<td>' . htmlspecialchars($row['reference_number'] ?? 'N/A') . '</td>';
+            echo '<td style="text-align: center;">' . (!empty($row['transaction_date']) ? Carbon::parse($row['transaction_date'])->format('Y-m-d') : '') . '</td>';
+            echo '<td><b>' . htmlspecialchars($row['title'] ?? '') . '</b>' . (!empty($row['description']) ? '<br/><span style="color:#64748b; font-size:8.5pt;">' . htmlspecialchars($row['description']) . '</span>' : '') . '</td>';
+            echo '<td style="text-align: center; font-weight: bold; color: ' . ($isIncome ? '#15803d' : '#b91c1c') . ';">' . ($isIncome ? 'INFLOW' : 'OUTFLOW') . '</td>';
+            echo '<td>' . htmlspecialchars($catLabel) . '</td>';
+            echo '<td>' . htmlspecialchars($row['payee_or_source'] ?? '') . '</td>';
+            echo '<td style="text-align: right; font-weight: bold; color: ' . ($isIncome ? '#15803d' : '#b91c1c') . ';">' . ($isIncome ? '+' : '-') . ' ₱ ' . number_format(floatval($row['amount'] ?? 0), 2) . '</td>';
+            echo '<td>' . htmlspecialchars($row['invoice_number'] ?? '-') . '</td>';
+            echo '<td>' . ($itemsText ?: '-') . '</td>';
+            echo '<td>' . htmlspecialchars($row['recorded_by'] ?? 'Treasury') . '</td>';
+            echo '</tr>';
+        }
+
+        // 4. Ledger Bottom Totals Row
+        echo '<tr class="total-row">';
+        echo '<td colspan="6" style="text-align: right; padding-right: 15px;">TOTAL INFLOW / OUTFLOW SUMMARY:</td>';
+        echo '<td style="text-align: right; font-size: 11pt;">Net: ₱ ' . number_format($netBalance, 2) . '</td>';
+        echo '<td colspan="3" style="font-size: 9pt; color: #475569;">+₱' . number_format($totalInflow, 2) . ' In | -₱' . number_format($totalOutflow, 2) . ' Out</td>';
+        echo '</tr>';
+
+        echo '</tbody></table>';
+        echo '</body></html>';
+
+        fclose($handle);
+    }, 200, $headers);
+}}

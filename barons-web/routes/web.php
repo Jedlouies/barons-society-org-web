@@ -26,6 +26,7 @@ Route::middleware(['web', 'supabase.session'])->group(function () {
         return view('bylaws');
     });
     
+    
     // News & Updates
     Route::get('/blogs', [BlogController::class, 'index'])->name('blogs.index');
     Route::post('/blogs', [BlogController::class, 'store'])->name('blogs.store');
@@ -35,6 +36,7 @@ Route::middleware(['web', 'supabase.session'])->group(function () {
     Route::get('/financial', [FinancialController::class, 'index'])->name('financial');
     Route::post('/financial/transaction', [FinancialController::class, 'store'])->name('financial.store');
     Route::get('/financial/receipt/{id}/download', [FinancialController::class, 'downloadReceipt'])->name('financial.receipt.download');
+    Route::get('/financial/export', [FinancialController::class, 'export'])->name('financial.export');
 
     // Dashboard & Admin Management
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
